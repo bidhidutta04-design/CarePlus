@@ -1,0 +1,38 @@
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      FRONTEND_URL: http://localhost:3000
+      MONGODB_URI: mongodb://mongo:27017/careplus
+      JWT_SECRET: change-me-in-production-min-32-chars
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+    depends_on:
+      mongo:
+        condition: service_healthy
+    command: sh -c "node backend/dist/index.js"
+
+  # Optional: seed on first boot
+  # Run: docker compose run --rm api npm run seed -w @careplus/backend
+
+volumes:
+  mongo_data:

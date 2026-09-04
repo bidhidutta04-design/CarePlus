@@ -28,7 +28,12 @@ CarePlus/
 # from repo root
 npm install
 
-# run both (api :4000 + web :3000)
+# one-command with Docker (api + mongo)
+docker compose up --build
+# seed on first boot in another shell:
+docker compose run --rm api npm run seed -w @careplus/backend
+
+# or without Docker (api :4000 + web :3000)
 npm run dev
 
 # or separately
@@ -37,33 +42,44 @@ npm run dev:frontend
 ```
 
 Backend needs env: copy `backend/.env.example` → `backend/.env` and set `JWT_SECRET`
-(min 32 chars). Frontend API base: `frontend/.env.example` → `NEXT_PUBLIC_API_URL`.
+(min 32 chars) and `MONGODB_URI` (default `mongodb://127.0.0.1:27017/careplus`).
+Frontend API base: `frontend/.env.example` → `NEXT_PUBLIC_API_URL`.
+Live docs: `http://localhost:4000/docs` (Swagger) and `http://localhost:4000/api/openapi.json`.
 
 ## API contract
 
 Base `http://localhost:4000`, envelope `{ data, meta? }`, errors
 `{ error: { code, message, details } }`.
 
-| Method    | Route                          | Auth                           | Notes                              |
-| --------- | ------------------------------ | ------------------------------ | ---------------------------------- |
-| GET       | `/health`                      | —                              | liveness                           |
-| POST      | `/api/auth/login`              | —                              | `{role,name}` → JWT                |
-| GET       | `/api/auth/roles`              | —                              | 6 workstation roles                |
-| GET/POST  | `/api/patients`                | JWT / Admin,Nurse for POST     | `?search=&status=&bloodGroup=`     |
-| GET       | `/api/patients/:id`            | JWT                            | includes visits, labs, bills       |
-| GET/POST  | `/api/appointments`            | JWT / Admin,Nurse for POST     | filters + guarded status machine   |
-| PATCH     | `/api/appointments/:id/status` | Admin,Doctor,Nurse             | Waiting→Triage→Doctor→Completed    |
-| GET/PATCH | `/api/beds`                    | JWT / Admin,Nurse,Doctor       | admit/transfer/release + occupancy |
-| GET       | `/api/pharmacy`                | JWT                            | FEFO sorted, `?lowStock=true`      |
-| POST      | `/api/pharmacy/batches`        | Admin,Pharmacist               | Zod-validated intake               |
-| POST      | `/api/pharmacy/dispense`       | Admin,Pharmacist               | stock check → deduct → charge      |
-| GET/POST  | `/api/lab`                     | JWT / Admin,Doctor,Nurse order | 4-stage pipeline                   |
-| PATCH     | `/api/lab/:id`                 | Admin,LabTech                  | forward-only stage advance         |
-| GET/POST  | `/api/billing`                 | JWT / Admin,Cashier invoice    | totals + tax computed server-side  |
-| POST      | `/api/billing/:id/collect`     | Admin,Cashier                  | rejects over-payment               |
+| Method    | Route                          | Auth                           | Notes                                     |
+| --------- | ------------------------------ | ------------------------------ | ----------------------------------------- |
+| GET       | `/health`                      | —                              | liveness                                  |
+| POST      | `/api/auth/login`              | —                              | `{role,name}` → JWT                       |
+| GET       | `/api/auth/roles`              | —                              | 6 workstation roles                       |
+| GET/POST  | `/api/patients`                | JWT / Admin,Nurse for POST     | `?search=&status=&bloodGroup=`            |
+| GET       | `/api/patients/:id`            | JWT                            | includes visits, labs, bills              |
+| GET/POST  | `/api/appointments`            | JWT / Admin,Nurse for POST     | filters + guarded status machine          |
+| PATCH     | `/api/appointments/:id/status` | Admin,Doctor,Nurse             | Waiting→Triage→Doctor→Completed           |
+| GET/PATCH | `/api/beds`                    | JWT / Admin,Nurse,Doctor       | admit/transfer/release + occupancy        |
+| GET       | `/api/pharmacy`                | JWT                            | FEFO sorted, `?lowStock=true`             |
+| POST      | `/api/pharmacy/batches`        | Admin,Pharmacist               | Zod-validated intake                      |
+| POST      | `/api/pharmacy/dispense`       | Admin,Pharmacist               | stock check → deduct → charge             |
+| GET/POST  | `/api/lab`                     | JWT / Admin,Doctor,Nurse order | 4-stage pipeline                          |
+| PATCH     | `/api/lab/:id`                 | Admin,LabTech                  | forward-only stage advance                |
+| GET/POST  | `/api/billing`                 | JWT / Admin,Cashier invoice    | totals + tax computed server-side         |
+| POST      | `/api/billing/:id/collect`     | Admin,Cashier                  | rejects over-payment                      |
+| GET       | `/api/doctors`                 | JWT                            | `?department=&availability=&page=&limit=` |
+| GET       | `/api/departments`             | JWT                            | `?page=&limit=`                           |
+| GET       | `/api/inventory`               | JWT                            | `?lowStock=&category=&page=&limit=`       |
+| POST      | `/api/inventory/:id/restock`   | Admin                          | `{qty}`                                   |
+| GET       | `/api/staff`                   | JWT                            | `?shift=&department=&page=&limit=`        |
+| GET       | `/api/audit`                   | JWT                            | append-only, `?page=&limit=`              |
+| GET       | `/api/dashboard/stats`         | JWT                            | aggregates for overview                   |
+| GET       | `/docs`                        | —                              | Swagger UI                                |
+| GET       | `/api/openapi.json`            | —                              | frozen contract                           |
 
 Test token: `POST /api/auth/login {"role":"Admin","name":"Tester"}` →
-`Authorization: Bearer <token>`.
+`Authorization: Bearer <token>` (also returns `refreshToken`; see `docs/API_CONTRACT.md`).
 
 ## Conventions
 
