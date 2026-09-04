@@ -17,6 +17,7 @@ import inventoryRoutes from "./routes/inventory.js";
 import staffRoutes from "./routes/staff.js";
 import auditRoutes from "./routes/audit.js";
 import dashboardRoutes from "./routes/dashboard.js";
+import docsRoutes from "./docs/router.js";
 
 export function createApp(): express.Express {
   const app = express();
@@ -31,7 +32,13 @@ export function createApp(): express.Express {
     res.json({ data: { status: "ok", service: "careplus-api", time: new Date().toISOString() } });
   });
 
-  app.use("/api/auth", authLimiter, authRoutes);
+  app.use("/docs", docsRoutes);
+  app.get("/api/openapi.json", (_req, res) => {
+    // also serve at the API prefix for contract freeze checks
+    void import("./docs/openapi.js").then(({ openApiSpec }) => res.json(openApiSpec));
+  });
+
+  app.use("/api/auth", authLimiter as unknown as import("express").RequestHandler, authRoutes);
   app.use("/api/patients", patientRoutes);
   app.use("/api/appointments", appointmentRoutes);
   app.use("/api/beds", bedRoutes);
