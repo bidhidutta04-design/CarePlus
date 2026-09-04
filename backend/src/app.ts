@@ -15,6 +15,8 @@ import doctorRoutes from "./routes/doctors.js";
 import departmentRoutes from "./routes/departments.js";
 import inventoryRoutes from "./routes/inventory.js";
 import staffRoutes from "./routes/staff.js";
+import auditRoutes from "./routes/audit.js";
+import dashboardRoutes from "./routes/dashboard.js";
 
 export function createApp(): express.Express {
   const app = express();
@@ -39,6 +41,8 @@ export function createApp(): express.Express {
   app.use("/api/departments", departmentRoutes);
   app.use("/api/inventory", inventoryRoutes);
   app.use("/api/staff", staffRoutes);
+  app.use("/api/audit", auditRoutes);
+  app.use("/api/dashboard", dashboardRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

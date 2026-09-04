@@ -10,6 +10,7 @@ import { DoctorModel } from "./models/Doctor.js";
 import { DepartmentModel } from "./models/Department.js";
 import { InventoryModel } from "./models/Inventory.js";
 import { StaffModel } from "./models/Staff.js";
+import { AuditModel } from "./models/Audit.js";
 
 async function upsertAll<T extends { id: string }>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -41,6 +42,7 @@ async function main(): Promise<void> {
   await upsertAll(DepartmentModel, db.departments, "departments");
   await upsertAll(InventoryModel, db.inventory, "inventory");
   await upsertAll(StaffModel, db.staff, "staff");
+  await upsertAll(AuditModel, db.auditLogs, "audit logs");
 
   console.log("seed complete");
   await disconnectDB();

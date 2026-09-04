@@ -1,0 +1,15 @@
+import mongoose, { Schema } from "mongoose";
+
+const auditSchema = new Schema(
+  {
+    id: { type: String, required: true, unique: true, index: true },
+    timestamp: { type: String, required: true },
+    user: { type: String, required: true },
+    role: { type: String, required: true, index: true },
+    action: { type: String, required: true },
+    ipAddress: { type: String, required: true },
+  },
+  { _id: false, versionKey: false, id: false },
+);
+
+export const AuditModel = mongoose.model("Audit", auditSchema);

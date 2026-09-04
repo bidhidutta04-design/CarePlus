@@ -690,6 +690,58 @@ const staff: StaffMember[] = [
   },
 ];
 
+export interface AuditLog {
+  id: string;
+  timestamp: string;
+  user: string;
+  role: string;
+  action: string;
+  ipAddress: string;
+}
+
+const auditLogs: AuditLog[] = [
+  {
+    id: "AUD-9001",
+    timestamp: "2026-09-03 09:02:11",
+    user: "Reception Desk",
+    role: "Admin",
+    action: "Booked APT-1265 for Manoj Tiwari",
+    ipAddress: "10.0.1.14",
+  },
+  {
+    id: "AUD-9002",
+    timestamp: "2026-09-03 09:14:44",
+    user: "Nurse Asha",
+    role: "Nurse",
+    action: "Recorded vitals for APT-1260 (SpO2 94%)",
+    ipAddress: "10.0.1.22",
+  },
+  {
+    id: "AUD-9003",
+    timestamp: "2026-09-03 10:22:57",
+    user: "Dr. Anjali Gupta",
+    role: "LabTech",
+    action: "Approved LAB-2001 (WBC flagged)",
+    ipAddress: "10.0.1.50",
+  },
+  {
+    id: "AUD-9004",
+    timestamp: "2026-09-03 10:40:08",
+    user: "Cashier Meena",
+    role: "Cashier",
+    action: "Collected payment against INV-2025-002 (TPA)",
+    ipAddress: "10.0.1.60",
+  },
+  {
+    id: "AUD-9005",
+    timestamp: "2026-09-03 11:02:33",
+    user: "Admin",
+    role: "Admin",
+    action: "Reserved BED-EM-03 for incoming trauma",
+    ipAddress: "10.0.1.10",
+  },
+];
+
 export const db = {
   patients,
   appointments,
@@ -701,4 +753,5 @@ export const db = {
   departments,
   inventory,
   staff,
+  auditLogs,
 };
