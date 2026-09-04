@@ -2,12 +2,33 @@ import mongoose, { Schema } from "mongoose";
 
 const doctorSchema = new Schema(
   {
-    id: { type: String, required: true, unique: true, index: true },
-    name: { type: String, required: true },
-    qualification: { type: String, required: true },
-    department: { type: String, required: true, index: true },
-    roomNo: { type: String, required: true },
-    fee: { type: Number, required: true },
+    id: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
+    name: {
+      type: String,
+      required: true,
+    },
+    qualification: {
+      type: String,
+      required: true,
+    },
+    department: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    roomNo: {
+      type: String,
+      required: true,
+    },
+    fee: {
+      type: Number,
+      required: true,
+    },
     availability: {
       type: String,
       required: true,
@@ -15,9 +36,18 @@ const doctorSchema = new Schema(
       index: true,
     },
     schedule: {
-      days: { type: [String], required: true },
-      hours: { type: String, required: true },
-      maxSlots: { type: Number, required: true },
+      days: {
+        type: [String],
+        required: true,
+      },
+      hours: {
+        type: String,
+        required: true,
+      },
+      maxSlots: {
+        type: Number,
+        required: true,
+      },
     },
   },
   { _id: false, versionKey: false, id: false },

@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 
-const departmentSchema = new Schema(
+const inventorySchema = new Schema(
   {
     id: {
       type: String,
@@ -11,29 +11,33 @@ const departmentSchema = new Schema(
     name: {
       type: String,
       required: true,
-      unique: true,
     },
-    hod: {
+    category: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    unit: {
       type: String,
       required: true,
     },
-    opdRooms: {
+    stock: {
       type: Number,
       required: true,
     },
-    bedCount: {
+    minThreshold: {
       type: Number,
       required: true,
     },
-    occupiedBeds: {
+    unitCost: {
       type: Number,
       required: true,
     },
-    doctorsCount: {
-      type: Number,
+    supplier: {
+      type: String,
       required: true,
     },
-    icon: {
+    lastRestocked: {
       type: String,
       required: true,
     },
@@ -41,4 +45,4 @@ const departmentSchema = new Schema(
   { _id: false, versionKey: false, id: false },
 );
 
-export const DepartmentModel = mongoose.model("Department", departmentSchema);
+export const InventoryModel = mongoose.model("Inventory", inventorySchema);

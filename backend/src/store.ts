@@ -573,4 +573,132 @@ const departments: Department[] = [
   },
 ];
 
-export const db = { patients, appointments, beds, medicines, labs, invoices, doctors, departments };
+export interface InventoryItem {
+  id: string;
+  name: string;
+  category: string;
+  unit: string;
+  stock: number;
+  minThreshold: number;
+  unitCost: number;
+  supplier: string;
+  lastRestocked: string;
+}
+
+export interface StaffMember {
+  id: string;
+  name: string;
+  role: string;
+  department: string;
+  shift: "Morning" | "Evening" | "Night";
+  phone: string;
+  status: "On Duty" | "Off Duty" | "On Leave";
+}
+
+const inventory: InventoryItem[] = [
+  {
+    id: "INV-S-01",
+    name: "Nitrile Gloves (M)",
+    category: "Consumable",
+    unit: "box/100",
+    stock: 240,
+    minThreshold: 100,
+    unitCost: 450,
+    supplier: "MedSupply Co",
+    lastRestocked: "2026-08-25",
+  },
+  {
+    id: "INV-S-02",
+    name: "3-ply Surgical Masks",
+    category: "Consumable",
+    unit: "box/50",
+    stock: 85,
+    minThreshold: 100,
+    unitCost: 180,
+    supplier: "SafeCare",
+    lastRestocked: "2026-08-20",
+  },
+  {
+    id: "INV-S-05",
+    name: "Oxygen Cylinder (B-type)",
+    category: "Equipment",
+    unit: "cyl",
+    stock: 18,
+    minThreshold: 10,
+    unitCost: 8500,
+    supplier: "OxyAir",
+    lastRestocked: "2026-08-15",
+  },
+  {
+    id: "INV-S-10",
+    name: "X-Ray Film 14x17",
+    category: "Radiology",
+    unit: "box/100",
+    stock: 12,
+    minThreshold: 15,
+    unitCost: 2400,
+    supplier: "RadioMed",
+    lastRestocked: "2026-07-18",
+  },
+];
+
+const staff: StaffMember[] = [
+  {
+    id: "STF-01",
+    name: "Asha Verma",
+    role: "Head Nurse",
+    department: "ICU",
+    shift: "Morning",
+    phone: "+91 98100 11111",
+    status: "On Duty",
+  },
+  {
+    id: "STF-02",
+    name: "Ravi Menon",
+    role: "Pharmacist",
+    department: "Pharmacy",
+    shift: "Morning",
+    phone: "+91 98100 22222",
+    status: "On Duty",
+  },
+  {
+    id: "STF-05",
+    name: "Kavita Singh",
+    role: "Staff Nurse",
+    department: "Emergency",
+    shift: "Evening",
+    phone: "+91 98100 55555",
+    status: "On Duty",
+  },
+  {
+    id: "STF-08",
+    name: "Amit Joshi",
+    role: "Ward Boy",
+    department: "General Ward",
+    shift: "Night",
+    phone: "+91 98100 88888",
+    status: "On Duty",
+  },
+  {
+    id: "STF-11",
+    name: "Sunita Devi",
+    role: "Housekeeping",
+    department: "Admin",
+    shift: "Morning",
+    phone: "+91 98101 11111",
+    status: "On Leave",
+  },
+];
+
+export const db = {
+  patients,
+  appointments,
+  beds,
+  medicines,
+  labs,
+  invoices,
+  doctors,
+  departments,
+  inventory,
+  staff,
+};
