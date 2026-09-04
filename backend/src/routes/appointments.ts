@@ -9,6 +9,7 @@ import {
   updateAppointmentStatus,
 } from "../repos/appointmentRepo.js";
 import { getPatientById } from "../repos/patientRepo.js";
+import { paginateArray, parsePagination } from "../paginate.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -44,7 +45,7 @@ const TRANSITIONS: Record<string, string[]> = {
   Cancelled: [],
 };
 
-// GET /api/appointments?status=&department=&priority=&search=
+// GET /api/appointments?status=&department=&priority=&search=&page=&limit=
 router.get("/", async (req, res, next) => {
   try {
     const {
@@ -53,8 +54,10 @@ router.get("/", async (req, res, next) => {
       priority = "",
       search = "",
     } = req.query as Record<string, string>;
+    const pagination = parsePagination(req.query as Record<string, string>);
     const list = await listAppointments({ status, department, priority, search });
-    res.json({ data: list, meta: { total: list.length } });
+    const { data, meta } = paginateArray(list, pagination);
+    res.json({ data, meta });
   } catch (err) {
     next(err);
   }

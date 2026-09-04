@@ -9,6 +9,7 @@ import {
   listMedicines,
 } from "../repos/medicineRepo.js";
 import { getPatientById } from "../repos/patientRepo.js";
+import { paginateArray, parsePagination } from "../paginate.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -30,12 +31,14 @@ const dispenseSchema = z.object({
   patientId: z.string().min(1),
 });
 
-// GET /api/pharmacy?search=&lowStock=true — FEFO sorted (earliest expiry first)
+// GET /api/pharmacy?search=&lowStock=true&page=&limit= — FEFO sorted
 router.get("/", async (req, res, next) => {
   try {
     const { search = "", lowStock = "" } = req.query as Record<string, string>;
+    const pagination = parsePagination(req.query as Record<string, string>);
     const list = await listMedicines({ search, lowStock });
-    res.json({ data: list, meta: { total: list.length } });
+    const { data, meta } = paginateArray(list, pagination);
+    res.json({ data, meta });
   } catch (err) {
     next(err);
   }

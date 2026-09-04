@@ -4,6 +4,7 @@ import { ApiError } from "../errors.js";
 import { requireAuth, requireRole, validate } from "../middleware.js";
 import { createLab, getLabById, listLabs, updateLab } from "../repos/labRepo.js";
 import { getPatientById } from "../repos/patientRepo.js";
+import { paginateArray, parsePagination } from "../paginate.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -30,12 +31,14 @@ const resultsSchema = z.object({
   pathologistSign: z.string().max(80).default(""),
 });
 
-// GET /api/lab?status=&patientId=
+// GET /api/lab?status=&patientId=&page=&limit=
 router.get("/", async (req, res, next) => {
   try {
     const { status = "", patientId = "" } = req.query as Record<string, string>;
+    const pagination = parsePagination(req.query as Record<string, string>);
     const list = await listLabs({ status, patientId });
-    res.json({ data: list, meta: { total: list.length } });
+    const { data, meta } = paginateArray(list, pagination);
+    res.json({ data, meta });
   } catch (err) {
     next(err);
   }

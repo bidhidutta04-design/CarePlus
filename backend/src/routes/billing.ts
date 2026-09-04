@@ -9,6 +9,7 @@ import {
   listInvoices,
 } from "../repos/invoiceRepo.js";
 import { getPatientById } from "../repos/patientRepo.js";
+import { paginateArray, parsePagination } from "../paginate.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -31,16 +32,18 @@ const collectSchema = z.object({
   amount: z.number().positive(),
 });
 
-// GET /api/billing?status=&patientId=
+// GET /api/billing?status=&patientId=&page=&limit=
 router.get("/", async (req, res, next) => {
   try {
     const { status = "", patientId = "" } = req.query as Record<string, string>;
+    const pagination = parsePagination(req.query as Record<string, string>);
     const list = await listInvoices({ status, patientId });
     const billed = list.reduce((s, i) => s + i.totalAmount, 0);
     const collected = list.reduce((s, i) => s + i.paidAmount, 0);
+    const { data, meta } = paginateArray(list, pagination);
     res.json({
-      data: list,
-      meta: { total: list.length, billed, collected, pending: billed - collected },
+      data,
+      meta: { ...meta, billed, collected, pending: billed - collected },
     });
   } catch (err) {
     next(err);

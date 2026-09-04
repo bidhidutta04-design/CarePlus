@@ -3,16 +3,19 @@ import { z } from "zod";
 import { requireAuth, requireRole, validate } from "../middleware.js";
 import { listInventory, restockInventory } from "../repos/inventoryRepo.js";
 import { ApiError } from "../errors.js";
+import { paginateArray, parsePagination } from "../paginate.js";
 
 const router = Router();
 router.use(requireAuth);
 
-// GET /api/inventory?lowStock=true&category=
+// GET /api/inventory?lowStock=true&category=&page=&limit=
 router.get("/", async (req, res, next) => {
   try {
     const { lowStock = "", category = "" } = req.query as Record<string, string>;
+    const pagination = parsePagination(req.query as Record<string, string>);
     const list = await listInventory({ lowStock, category });
-    res.json({ data: list, meta: { total: list.length } });
+    const { data, meta } = paginateArray(list, pagination);
+    res.json({ data, meta });
   } catch (err) {
     next(err);
   }

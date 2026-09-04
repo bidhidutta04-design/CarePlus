@@ -3,6 +3,7 @@ import { z } from "zod";
 import { ApiError } from "../errors.js";
 import { requireAuth, requireRole, validate } from "../middleware.js";
 import { getBedById, listBeds, updateBed } from "../repos/bedRepo.js";
+import { paginateArray, parsePagination } from "../paginate.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -13,19 +14,18 @@ const updateSchema = z.object({
   patientName: z.string().max(100).optional(),
 });
 
-// GET /api/beds?ward=&status=
+// GET /api/beds?ward=&status=&page=&limit=
 router.get("/", async (req, res, next) => {
   try {
     const { ward = "", status = "" } = req.query as Record<string, string>;
+    const pagination = parsePagination(req.query as Record<string, string>);
     const list = await listBeds({ ward, status });
     const occupied = list.filter((b) => b.status === "Occupied").length;
+    const occupancyPct = list.length ? Math.round((occupied / list.length) * 100) : 0;
+    const { data, meta } = paginateArray(list, pagination);
     res.json({
-      data: list,
-      meta: {
-        total: list.length,
-        occupied,
-        occupancyPct: list.length ? Math.round((occupied / list.length) * 100) : 0,
-      },
+      data,
+      meta: { ...meta, occupied, occupancyPct },
     });
   } catch (err) {
     next(err);

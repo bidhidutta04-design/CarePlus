@@ -2,17 +2,36 @@ import mongoose, { Schema } from "mongoose";
 
 const staffSchema = new Schema(
   {
-    id: { type: String, required: true, unique: true, index: true },
-    name: { type: String, required: true },
-    role: { type: String, required: true, index: true },
-    department: { type: String, required: true, index: true },
+    id: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
+    name: {
+      type: String,
+      required: true,
+    },
+    role: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    department: {
+      type: String,
+      required: true,
+      index: true,
+    },
     shift: {
       type: String,
       required: true,
       enum: ["Morning", "Evening", "Night"],
       index: true,
     },
-    phone: { type: String, required: true },
+    phone: {
+      type: String,
+      required: true,
+    },
     status: {
       type: String,
       required: true,

@@ -4,6 +4,7 @@ import { ApiError } from "../errors.js";
 import { requireAuth, requireRole, validate } from "../middleware.js";
 import { createPatient, getPatientById, listPatients } from "../repos/patientRepo.js";
 import { db } from "../store.js";
+import { paginateArray, parsePagination } from "../paginate.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -26,12 +27,14 @@ const patientSchema = z.object({
   admissionStatus: z.enum(["OPD", "Admitted", "Discharged"]).default("OPD"),
 });
 
-// GET /api/patients?search=&status=&bloodGroup=
+// GET /api/patients?search=&status=&bloodGroup=&page=&limit=&sort=&order=
 router.get("/", async (req, res, next) => {
   try {
     const { search = "", status = "", bloodGroup = "" } = req.query as Record<string, string>;
+    const pagination = parsePagination(req.query as Record<string, string>);
     const list = await listPatients({ search, status, bloodGroup });
-    res.json({ data: list, meta: { total: list.length } });
+    const { data, meta } = paginateArray(list, pagination);
+    res.json({ data, meta });
   } catch (err) {
     next(err);
   }
