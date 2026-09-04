@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { z } from "zod";
-import { db, type Patient } from "../store.js";
 import { ApiError } from "../errors.js";
 import { requireAuth, requireRole, validate } from "../middleware.js";
+import { createPatient, getPatientById, listPatients } from "../repos/patientRepo.js";
+import { db } from "../store.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -26,38 +27,42 @@ const patientSchema = z.object({
 });
 
 // GET /api/patients?search=&status=&bloodGroup=
-router.get("/", (req, res) => {
-  const { search = "", status = "", bloodGroup = "" } = req.query as Record<string, string>;
-  const q = search.toLowerCase();
-  const list = db.patients.filter(
-    (p) =>
-      (!status || p.admissionStatus === status) &&
-      (!bloodGroup || p.bloodGroup === bloodGroup) &&
-      (!q || [p.id, p.fullName, p.phone].join(" ").toLowerCase().includes(q)),
-  );
-  res.json({ data: list, meta: { total: list.length } });
+router.get("/", async (req, res, next) => {
+  try {
+    const { search = "", status = "", bloodGroup = "" } = req.query as Record<string, string>;
+    const list = await listPatients({ search, status, bloodGroup });
+    res.json({ data: list, meta: { total: list.length } });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // GET /api/patients/:id
-router.get("/:id", (req, res, next) => {
-  const p = db.patients.find((x) => x.id === req.params.id);
-  if (!p) {
-    next(ApiError.notFound("Patient"));
-    return;
+router.get("/:id", async (req, res, next) => {
+  try {
+    const p = await getPatientById(req.params.id);
+    if (!p) {
+      next(ApiError.notFound("Patient"));
+      return;
+    }
+    const visits = db.appointments.filter((a) => a.patientId === p.id);
+    const labOrders = db.labs.filter((l) => l.patientId === p.id);
+    const bills = db.invoices.filter((i) => i.patientId === p.id);
+    res.json({ data: { ...p, visits, labOrders, bills } });
+  } catch (err) {
+    next(err);
   }
-  const visits = db.appointments.filter((a) => a.patientId === p.id);
-  const labOrders = db.labs.filter((l) => l.patientId === p.id);
-  const bills = db.invoices.filter((i) => i.patientId === p.id);
-  res.json({ data: { ...p, visits, labOrders, bills } });
 });
 
 // POST /api/patients
-router.post("/", requireRole("Admin", "Nurse"), validate(patientSchema), (req, res) => {
-  const body = req.body as z.infer<typeof patientSchema>;
-  const id = `CP-${1001 + db.patients.length + 1}`;
-  const patient: Patient = { ...body, id, registeredDate: new Date().toISOString().slice(0, 10) };
-  db.patients.unshift(patient);
-  res.status(201).json({ data: patient });
+router.post("/", requireRole("Admin", "Nurse"), validate(patientSchema), async (req, res, next) => {
+  try {
+    const body = req.body as z.infer<typeof patientSchema>;
+    const patient = await createPatient(body);
+    res.status(201).json({ data: patient });
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;
