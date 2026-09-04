@@ -10,7 +10,8 @@
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src tests",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed": "tsx src/seed.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
