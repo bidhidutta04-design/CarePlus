@@ -26,6 +26,12 @@ async function main(): Promise<void> {
 
   process.on("SIGINT", () => void shutdown());
   process.on("SIGTERM", () => void shutdown());
+  process.on("unhandledRejection", (reason) => {
+    console.error("unhandledRejection", reason);
+  });
+  process.on("uncaughtException", (err) => {
+    console.error("uncaughtException", err);
+  });
 }
 
 void main();

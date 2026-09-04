@@ -61,22 +61,109 @@ export function validate<T extends z.ZodTypeAny>(schema: T) {
   };
 }
 
-export function errorHandler(
-  err: unknown,
-  _req: Request,
-  res: Response,
-  _next: NextFunction,
-): void {
+export function validateQuery<T extends z.ZodTypeAny>(schema: T) {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    const parsed = schema.safeParse(req.query);
+    if (!parsed.success) {
+      next(ApiError.badRequest("Invalid query", parsed.error.flatten()));
+      return;
+    }
+    // Keep parsed query but preserve unknown keys for pagination passthrough
+    req.query = { ...req.query, ...(parsed.data as Record<string, string>) } as Record<
+      string,
+      string
+    >;
+    next();
+  };
+}
+
+export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction): void {
+  const requestId = (req as unknown as Record<string, unknown>).requestId as string | undefined;
+
   if (err instanceof ApiError) {
-    res
-      .status(err.status)
-      .json({ error: { code: err.code, message: err.message, details: err.details ?? null } });
+    res.status(err.status).json({
+      error: {
+        code: err.code,
+        message: err.message,
+        details: config.isProd ? undefined : (err.details ?? null),
+        requestId,
+      },
+    });
     return;
   }
-  console.error(err);
-  res
-    .status(500)
-    .json({ error: { code: "INTERNAL", message: "Unexpected server error", details: null } });
+
+  // Mongoose validation / cast / duplicate key
+  const anyErr = err as { name?: string; code?: number; message?: string; errors?: unknown };
+  if (anyErr?.name === "ValidationError") {
+    res.status(400).json({
+      error: {
+        code: "BAD_REQUEST",
+        message: "Validation failed",
+        details: anyErr.errors ?? null,
+        requestId,
+      },
+    });
+    return;
+  }
+  if (anyErr?.name === "CastError") {
+    res.status(400).json({
+      error: {
+        code: "BAD_REQUEST",
+        message: anyErr.message ?? "Invalid id",
+        details: null,
+        requestId,
+      },
+    });
+    return;
+  }
+  if (anyErr?.code === 11000) {
+    res
+      .status(409)
+      .json({ error: { code: "CONFLICT", message: "Duplicate key", details: null, requestId } });
+    return;
+  }
+  // Express json parse / payload too large
+  if (
+    anyErr?.message?.includes("request entity too large") ||
+    (anyErr as { type?: string })?.type === "entity.too.large"
+  ) {
+    res.status(413).json({
+      error: {
+        code: "PAYLOAD_TOO_LARGE",
+        message: "Payload too large",
+        details: null,
+        requestId,
+      },
+    });
+    return;
+  }
+  if (
+    anyErr?.message?.includes("Unexpected token") ||
+    (anyErr as { type?: string })?.type === "entity.parse.failed"
+  ) {
+    res
+      .status(400)
+      .json({ error: { code: "BAD_REQUEST", message: "Invalid JSON", details: null, requestId } });
+    return;
+  }
+
+  // Unknown — log with requestId, hide details in prod
+  const logPayload = {
+    requestId,
+    err: anyErr?.message ?? String(err),
+    stack: (err as Error)?.stack,
+  };
+  if (config.isProd) console.error(JSON.stringify(logPayload));
+  else console.error(err);
+
+  res.status(500).json({
+    error: {
+      code: "INTERNAL",
+      message: "Unexpected server error",
+      details: config.isProd ? undefined : ((err as Error)?.message ?? null),
+      requestId,
+    },
+  });
 }
 
 export function notFound(_req: Request, res: Response): void {
