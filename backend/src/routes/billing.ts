@@ -1,8 +1,14 @@
 import { Router } from "express";
 import { z } from "zod";
-import { db, type Invoice } from "../store.js";
 import { ApiError } from "../errors.js";
 import { requireAuth, requireRole, validate } from "../middleware.js";
+import {
+  collectInvoice,
+  createInvoice,
+  getInvoiceById,
+  listInvoices,
+} from "../repos/invoiceRepo.js";
+import { getPatientById } from "../repos/patientRepo.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -26,17 +32,19 @@ const collectSchema = z.object({
 });
 
 // GET /api/billing?status=&patientId=
-router.get("/", (req, res) => {
-  const { status = "", patientId = "" } = req.query as Record<string, string>;
-  const list = db.invoices.filter(
-    (i) => (!status || i.status === status) && (!patientId || i.patientId === patientId),
-  );
-  const billed = list.reduce((s, i) => s + i.totalAmount, 0);
-  const collected = list.reduce((s, i) => s + i.paidAmount, 0);
-  res.json({
-    data: list,
-    meta: { total: list.length, billed, collected, pending: billed - collected },
-  });
+router.get("/", async (req, res, next) => {
+  try {
+    const { status = "", patientId = "" } = req.query as Record<string, string>;
+    const list = await listInvoices({ status, patientId });
+    const billed = list.reduce((s, i) => s + i.totalAmount, 0);
+    const collected = list.reduce((s, i) => s + i.paidAmount, 0);
+    res.json({
+      data: list,
+      meta: { total: list.length, billed, collected, pending: billed - collected },
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 // POST /api/billing/invoices
@@ -44,34 +52,32 @@ router.post(
   "/invoices",
   requireRole("Admin", "Cashier"),
   validate(createSchema),
-  (req, res, next) => {
-    const body = req.body as z.infer<typeof createSchema>;
-    const patient = db.patients.find((p) => p.id === body.patientId);
-    if (!patient) {
-      next(ApiError.notFound("Patient"));
-      return;
+  async (req, res, next) => {
+    try {
+      const body = req.body as z.infer<typeof createSchema>;
+      const patient = await getPatientById(body.patientId);
+      if (!patient) {
+        next(ApiError.notFound("Patient"));
+        return;
+      }
+      const subtotal = body.items.reduce((s, i) => s + i.amount, 0);
+      const tax = Math.round((subtotal - body.discount) * 0.05);
+      const totalAmount = subtotal - body.discount + tax;
+      const inv = await createInvoice({
+        patientId: body.patientId,
+        patientName: patient.fullName,
+        items: body.items,
+        subtotal,
+        discount: body.discount,
+        tax,
+        totalAmount,
+        paymentMethod: body.paymentMethod,
+        tpaProvider: body.tpaProvider,
+      });
+      res.status(201).json({ data: inv });
+    } catch (err) {
+      next(err);
     }
-    const subtotal = body.items.reduce((s, i) => s + i.amount, 0);
-    const tax = Math.round((subtotal - body.discount) * 0.05);
-    const totalAmount = subtotal - body.discount + tax;
-    const inv: Invoice = {
-      id: `INV-2025-${String(db.invoices.length + 1).padStart(3, "0")}`,
-      patientName: patient.fullName,
-      patientId: patient.id,
-      date: new Date().toISOString().slice(0, 10),
-      items: body.items,
-      subtotal,
-      discount: body.discount,
-      tax,
-      totalAmount,
-      paidAmount: 0,
-      balanceDue: totalAmount,
-      paymentMethod: body.paymentMethod,
-      tpaProvider: body.tpaProvider,
-      status: "Unpaid",
-    };
-    db.invoices.unshift(inv);
-    res.status(201).json({ data: inv });
   },
 );
 
@@ -80,21 +86,23 @@ router.post(
   "/:id/collect",
   requireRole("Admin", "Cashier"),
   validate(collectSchema),
-  (req, res, next) => {
-    const inv = db.invoices.find((i) => i.id === req.params.id);
-    if (!inv) {
-      next(ApiError.notFound("Invoice"));
-      return;
+  async (req, res, next) => {
+    try {
+      const inv = await getInvoiceById(req.params.id);
+      if (!inv) {
+        next(ApiError.notFound("Invoice"));
+        return;
+      }
+      const { amount } = req.body as z.infer<typeof collectSchema>;
+      if (amount > inv.balanceDue) {
+        next(ApiError.badRequest(`Amount exceeds balance due (${inv.balanceDue})`));
+        return;
+      }
+      const updated = await collectInvoice(req.params.id, amount);
+      res.json({ data: updated });
+    } catch (err) {
+      next(err);
     }
-    const { amount } = req.body as z.infer<typeof collectSchema>;
-    if (amount > inv.balanceDue) {
-      next(ApiError.badRequest(`Amount exceeds balance due (${inv.balanceDue})`));
-      return;
-    }
-    inv.paidAmount += amount;
-    inv.balanceDue = inv.totalAmount - inv.paidAmount;
-    inv.status = inv.balanceDue === 0 ? "Paid" : "Partial";
-    res.json({ data: inv });
   },
 );
 
