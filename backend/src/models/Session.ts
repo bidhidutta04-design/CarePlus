@@ -2,15 +2,22 @@ import mongoose, { Schema } from "mongoose";
 
 const sessionSchema = new Schema(
   {
-    refreshToken: {
+    refreshTokenHash: {
       type: String,
       required: true,
       unique: true,
       index: true,
     },
+    refreshToken: {
+      type: String,
+      required: false,
+      index: true,
+      sparse: true,
+    },
     sub: {
       type: String,
       required: true,
+      index: true,
     },
     name: {
       type: String,
@@ -20,12 +27,24 @@ const sessionSchema = new Schema(
       type: String,
       required: true,
     },
+    familyId: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    replacedByHash: {
+      type: String,
+      required: false,
+      index: true,
+    },
+    isRevoked: {
+      type: Boolean,
+      default: false,
+    },
     expiresAt: {
       type: Date,
       required: true,
-      index: {
-        expireAfterSeconds: 0,
-      },
+      index: { expireAfterSeconds: 0 },
     },
   },
   { timestamps: true, versionKey: false },

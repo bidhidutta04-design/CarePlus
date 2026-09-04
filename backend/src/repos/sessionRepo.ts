@@ -1,12 +1,17 @@
+import crypto from "node:crypto";
 import mongoose from "mongoose";
 import { SessionModel } from "../models/Session.js";
 
 // In-memory fallback for when Mongo is not connected (dev without DB)
 const memorySessions: Array<{
-  refreshToken: string;
+  refreshTokenHash: string;
+  refreshToken?: string;
   sub: string;
   name: string;
   role: string;
+  familyId: string;
+  replacedByHash?: string;
+  isRevoked: boolean;
   expiresAt: Date;
 }> = [];
 
@@ -14,48 +19,128 @@ function isDbReady(): boolean {
   return mongoose.connection.readyState === 1;
 }
 
+export function hashToken(token: string): string {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
 export async function createSession(data: {
   refreshToken: string;
   sub: string;
   name: string;
   role: string;
+  familyId: string;
   expiresAt: Date;
-}): Promise<void> {
+}): Promise<string> {
+  const refreshTokenHash = hashToken(data.refreshToken);
+  const doc = {
+    refreshTokenHash,
+    refreshToken: data.refreshToken,
+    sub: data.sub,
+    name: data.name,
+    role: data.role,
+    familyId: data.familyId,
+    isRevoked: false,
+    expiresAt: data.expiresAt,
+  };
   if (!isDbReady()) {
-    memorySessions.push(data);
-    return;
+    memorySessions.push(doc);
+    return refreshTokenHash;
   }
-  await SessionModel.create(data);
+  await SessionModel.create(doc);
+  return refreshTokenHash;
 }
 
-export async function findSession(refreshToken: string): Promise<{
-  refreshToken: string;
+export async function findSessionByToken(refreshToken: string): Promise<{
+  refreshTokenHash: string;
   sub: string;
   name: string;
   role: string;
+  familyId: string;
+  replacedByHash?: string;
+  isRevoked: boolean;
   expiresAt: Date;
 } | null> {
+  const hash = hashToken(refreshToken);
   if (!isDbReady()) {
-    return memorySessions.find((s) => s.refreshToken === refreshToken) ?? null;
+    return (
+      memorySessions.find((s) => s.refreshTokenHash === hash || s.refreshToken === refreshToken) ??
+      null
+    );
   }
-  const doc = await SessionModel.findOne({ refreshToken }).lean();
+  const doc = await SessionModel.findOne({
+    $or: [{ refreshTokenHash: hash }, { refreshToken }],
+  }).lean();
   return (doc as unknown as (typeof memorySessions)[number]) ?? null;
 }
 
-export async function deleteSession(refreshToken: string): Promise<void> {
+// Legacy alias for backward compat
+export const findSession = findSessionByToken;
+
+export async function rotateSession(
+  oldHash: string,
+  newData: { refreshToken: string; expiresAt: Date },
+): Promise<string> {
+  const newHash = hashToken(newData.refreshToken);
   if (!isDbReady()) {
-    const idx = memorySessions.findIndex((s) => s.refreshToken === refreshToken);
+    const sess = memorySessions.find((s) => s.refreshTokenHash === oldHash);
+    if (!sess) return newHash;
+    sess.replacedByHash = newHash;
+    sess.isRevoked = true;
+    memorySessions.push({
+      refreshTokenHash: newHash,
+      refreshToken: newData.refreshToken,
+      sub: sess.sub,
+      name: sess.name,
+      role: sess.role,
+      familyId: sess.familyId,
+      isRevoked: false,
+      expiresAt: newData.expiresAt,
+    });
+    return newHash;
+  }
+  await SessionModel.updateOne(
+    { refreshTokenHash: oldHash },
+    { isRevoked: true, replacedByHash: newHash },
+  );
+  const old = await SessionModel.findOne({ refreshTokenHash: oldHash }).lean();
+  if (!old) return newHash;
+  await SessionModel.create({
+    refreshTokenHash: newHash,
+    refreshToken: newData.refreshToken,
+    sub: (old as unknown as (typeof memorySessions)[number]).sub,
+    name: (old as unknown as (typeof memorySessions)[number]).name,
+    role: (old as unknown as (typeof memorySessions)[number]).role,
+    familyId: (old as unknown as (typeof memorySessions)[number]).familyId,
+    isRevoked: false,
+    expiresAt: newData.expiresAt,
+  });
+  return newHash;
+}
+
+export async function deleteSession(refreshToken: string): Promise<void> {
+  const hash = hashToken(refreshToken);
+  if (!isDbReady()) {
+    const idx = memorySessions.findIndex(
+      (s) => s.refreshTokenHash === hash || s.refreshToken === refreshToken,
+    );
     if (idx >= 0) memorySessions.splice(idx, 1);
     return;
   }
-  await SessionModel.deleteOne({ refreshToken });
+  await SessionModel.deleteOne({ $or: [{ refreshTokenHash: hash }, { refreshToken }] });
+}
+
+export async function revokeFamily(familyId: string): Promise<void> {
+  if (!isDbReady()) {
+    for (const s of memorySessions) if (s.familyId === familyId) s.isRevoked = true;
+    return;
+  }
+  await SessionModel.updateMany({ familyId }, { isRevoked: true });
 }
 
 export async function deleteSessionsBySub(sub: string): Promise<void> {
   if (!isDbReady()) {
-    for (let i = memorySessions.length - 1; i >= 0; i -= 1) {
+    for (let i = memorySessions.length - 1; i >= 0; i -= 1)
       if (memorySessions[i].sub === sub) memorySessions.splice(i, 1);
-    }
     return;
   }
   await SessionModel.deleteMany({ sub });

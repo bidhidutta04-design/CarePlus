@@ -5,7 +5,14 @@ import { z } from "zod";
 import { config } from "../config.js";
 import { validate } from "../middleware.js";
 import { ApiError } from "../errors.js";
-import { createSession, deleteSession, findSession } from "../repos/sessionRepo.js";
+import {
+  createSession,
+  deleteSession,
+  findSessionByToken,
+  hashToken,
+  revokeFamily,
+  rotateSession,
+} from "../repos/sessionRepo.js";
 
 const router = Router();
 
@@ -17,24 +24,50 @@ const loginSchema = z.object({
 });
 
 const refreshSchema = z.object({
-  refreshToken: z.string().min(10),
+  refreshToken: z.string().min(10).optional(),
 });
 
-function signAccessToken(payload: { sub: string; name: string; role: string }): string {
-  return jwt.sign(payload, config.jwtSecret, {
+function signAccessToken(payload: {
+  sub: string;
+  name: string;
+  role: string;
+  jti: string;
+}): string {
+  return jwt.sign(payload, config.jwtAccessSecret, {
     expiresIn: config.jwtExpiresIn,
+    issuer: "careplus-api",
+    audience: "careplus-web",
   } as jwt.SignOptions);
+}
+
+function refreshCookieOptions(maxAgeMs: number): {
+  httpOnly: boolean;
+  secure: boolean;
+  sameSite: "strict";
+  path: string;
+  maxAge: number;
+} {
+  return {
+    httpOnly: true,
+    secure: config.isProd,
+    sameSite: "strict",
+    path: "/api/auth",
+    maxAge: maxAgeMs,
+  };
 }
 
 // POST /api/auth/login — role-based workstation sign-in (mock IdP; replace with LDAP/SSO).
 router.post("/login", validate(loginSchema), async (req, res, next) => {
   try {
     const { role, name } = req.body as { role: string; name: string };
-    const sub = `${role}-${Date.now()}`;
-    const token = signAccessToken({ sub, name, role });
-    const refreshToken = crypto.randomUUID();
+    const sub = `${role}-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+    const jti = crypto.randomUUID();
+    const token = signAccessToken({ sub, name, role, jti });
+    const refreshToken = crypto.randomBytes(48).toString("base64url");
+    const familyId = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + config.jwtRefreshExpiresMs);
-    await createSession({ refreshToken, sub, name, role, expiresAt });
+    await createSession({ refreshToken, sub, name, role, familyId, expiresAt });
+    res.cookie("refreshToken", refreshToken, refreshCookieOptions(config.jwtRefreshExpiresMs));
     res.json({
       data: { token, refreshToken, role, name, expiresIn: config.jwtExpiresIn },
     });
@@ -43,32 +76,58 @@ router.post("/login", validate(loginSchema), async (req, res, next) => {
   }
 });
 
-// POST /api/auth/refresh — exchange valid refresh token for new access token
+// POST /api/auth/refresh — exchange valid refresh token for new pair (rotation + reuse detection)
 router.post("/refresh", validate(refreshSchema), async (req, res, next) => {
   try {
-    const { refreshToken } = req.body as z.infer<typeof refreshSchema>;
-    const session = await findSession(refreshToken);
+    const raw =
+      (req.body as { refreshToken?: string }).refreshToken ??
+      (req.cookies as Record<string, string>)?.refreshToken;
+    if (!raw) {
+      next(ApiError.unauthorized("Missing refresh token"));
+      return;
+    }
+    const session = await findSessionByToken(raw);
     if (!session) {
       next(ApiError.unauthorized("Invalid refresh token"));
       return;
     }
+    if (session.isRevoked) {
+      // Reuse of an already-rotated token → possible theft → revoke entire family
+      await revokeFamily(session.familyId);
+      next(ApiError.unauthorized("Refresh token reused — family revoked"));
+      return;
+    }
     if (session.expiresAt.getTime() < Date.now()) {
-      await deleteSession(refreshToken);
+      await deleteSession(raw);
       next(ApiError.unauthorized("Refresh token expired"));
       return;
     }
-    const token = signAccessToken({ sub: session.sub, name: session.name, role: session.role });
-    res.json({ data: { token, expiresIn: config.jwtExpiresIn } });
+    const newRefreshToken = crypto.randomBytes(48).toString("base64url");
+    const newExpiresAt = new Date(Date.now() + config.jwtRefreshExpiresMs);
+    const oldHash = hashToken(raw);
+    await rotateSession(oldHash, { refreshToken: newRefreshToken, expiresAt: newExpiresAt });
+    const jti = crypto.randomUUID();
+    const token = signAccessToken({
+      sub: session.sub,
+      name: session.name,
+      role: session.role,
+      jti,
+    });
+    res.cookie("refreshToken", newRefreshToken, refreshCookieOptions(config.jwtRefreshExpiresMs));
+    res.json({ data: { token, refreshToken: newRefreshToken, expiresIn: config.jwtExpiresIn } });
   } catch (err) {
     next(err);
   }
 });
 
-// POST /api/auth/logout — revoke refresh token
+// POST /api/auth/logout — revoke refresh token (body or httpOnly cookie)
 router.post("/logout", validate(refreshSchema), async (req, res, next) => {
   try {
-    const { refreshToken } = req.body as z.infer<typeof refreshSchema>;
-    await deleteSession(refreshToken);
+    const raw =
+      (req.body as { refreshToken?: string }).refreshToken ??
+      (req.cookies as Record<string, string>)?.refreshToken;
+    if (raw) await deleteSession(raw);
+    res.clearCookie("refreshToken", { path: "/api/auth" });
     res.json({ data: { ok: true } });
   } catch (err) {
     next(err);

@@ -27,7 +27,8 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction): v
     return;
   }
   try {
-    req.user = jwt.verify(header.slice(7), config.jwtSecret) as AuthUser;
+    // Access tokens are always signed with the access secret
+    req.user = jwt.verify(header.slice(7), config.jwtAccessSecret) as AuthUser;
     next();
   } catch {
     next(ApiError.unauthorized("Token expired or invalid"));
