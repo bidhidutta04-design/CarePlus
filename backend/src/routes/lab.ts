@@ -1,13 +1,14 @@
 import { Router } from "express";
 import { z } from "zod";
 import { ApiError } from "../errors.js";
-import { requireAuth, requireRole, validate } from "../middleware.js";
+import { auditLog, requireAuth, requireRole, validate } from "../middleware.js";
 import { createLab, getLabById, listLabs, updateLab } from "../repos/labRepo.js";
 import { getPatientById } from "../repos/patientRepo.js";
 import { paginateArray, parsePagination } from "../paginate.js";
 
 const router = Router();
 router.use(requireAuth);
+router.use(auditLog);
 
 const STAGES = ["Ordered", "Sample Collected", "Under Analysis", "Report Approved"] as const;
 

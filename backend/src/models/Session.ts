@@ -8,10 +8,25 @@ const sessionSchema = new Schema(
       unique: true,
       index: true,
     },
-    sub: { type: String, required: true },
-    name: { type: String, required: true },
-    role: { type: String, required: true },
-    expiresAt: { type: Date, required: true, index: { expireAfterSeconds: 0 } },
+    sub: {
+      type: String,
+      required: true,
+    },
+    name: {
+      type: String,
+      required: true,
+    },
+    role: {
+      type: String,
+      required: true,
+    },
+    expiresAt: {
+      type: Date,
+      required: true,
+      index: {
+        expireAfterSeconds: 0,
+      },
+    },
   },
   { timestamps: true, versionKey: false },
 );

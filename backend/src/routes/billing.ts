@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { ApiError } from "../errors.js";
-import { requireAuth, requireRole, validate } from "../middleware.js";
+import { auditLog, requireAuth, requireRole, validate } from "../middleware.js";
 import {
   collectInvoice,
   createInvoice,
@@ -13,6 +13,7 @@ import { paginateArray, parsePagination } from "../paginate.js";
 
 const router = Router();
 router.use(requireAuth);
+router.use(auditLog);
 
 const itemSchema = z.object({
   desc: z.string().min(2).max(120),

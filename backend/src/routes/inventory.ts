@@ -1,12 +1,13 @@
 import { Router } from "express";
 import { z } from "zod";
-import { requireAuth, requireRole, validate } from "../middleware.js";
+import { auditLog, requireAuth, requireRole, validate } from "../middleware.js";
 import { listInventory, restockInventory } from "../repos/inventoryRepo.js";
 import { ApiError } from "../errors.js";
 import { paginateArray, parsePagination } from "../paginate.js";
 
 const router = Router();
 router.use(requireAuth);
+router.use(auditLog);
 
 // GET /api/inventory?lowStock=true&category=&page=&limit=
 router.get("/", async (req, res, next) => {

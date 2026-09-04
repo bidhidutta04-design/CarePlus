@@ -1,12 +1,13 @@
 import { Router } from "express";
 import { z } from "zod";
 import { ApiError } from "../errors.js";
-import { requireAuth, requireRole, validate } from "../middleware.js";
+import { auditLog, requireAuth, requireRole, validate } from "../middleware.js";
 import { getBedById, listBeds, updateBed } from "../repos/bedRepo.js";
 import { paginateArray, parsePagination } from "../paginate.js";
 
 const router = Router();
 router.use(requireAuth);
+router.use(auditLog);
 
 const updateSchema = z.object({
   status: z.enum(["Vacant", "Occupied", "Sanitizing", "Reserved"]),
