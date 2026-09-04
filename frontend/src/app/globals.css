@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 210 60% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 210 60% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 60% 12%;
+    --primary: 201 69% 36%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 210 60% 17%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 199 91% 64%;
+    --accent-foreground: 210 60% 12%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 201 69% 36%;
+    --radius: 0.75rem;
+  }
+  .dark {
+    --background: 210 60% 8%;
+    --foreground: 210 40% 96%;
+    --card: 210 55% 12%;
+    --card-foreground: 210 40% 96%;
+    --popover: 210 55% 12%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 199 91% 64%;
+    --primary-foreground: 210 60% 8%;
+    --secondary: 210 50% 16%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 210 50% 16%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 199 91% 64%;
+    --accent-foreground: 210 60% 8%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 50% 20%;
+    --input: 210 50% 20%;
+    --ring: 199 91% 64%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-canvas text-foreground antialiased;
+    font-family: Inter, system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer components {
+  .card-surface {
+    @apply bg-white dark:bg-card rounded-2xl border shadow-card;
+  }
+  .badge-healthy {
+    background: #e6f5e8;
+    color: #2e7d32;
+  }
+  .badge-warning {
+    background: #fef2d6;
+    color: #965f0e;
+  }
+  .badge-danger {
+    background: #fde8e8;
+    color: #c62828;
+  }
+  .badge-info {
+    background: #e3f0f9;
+    color: #11507a;
+  }
+}
+
+@media print {
+  .print-hidden {
+    display: none !important;
+  }
+  .print-area {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+}

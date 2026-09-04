@@ -1,9 +1,27 @@
 {
-  "name": "careplus-hospital-dashboard",
-  "private": true,
+  "name": "careplus-monorepo",
   "version": "1.0.0",
+  "private": true,
   "type": "module",
-  "scripts": { "dev": "vite", "build": "vite build", "preview": "vite preview" },
-  "dependencies": { "@vitejs/plugin-react": "latest", "vite": "latest", "react": "latest", "react-dom": "latest" },
-  "devDependencies": {}
+  "description": "CarePlus HMS — frontend (Next.js) + backend (Express REST API) monorepo",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"npm run dev -w @careplus/backend\" \"npm run dev -w @careplus/frontend\"",
+    "dev:frontend": "npm run dev -w @careplus/frontend",
+    "dev:backend": "npm run dev -w @careplus/backend",
+    "build": "npm run build -w @careplus/backend && npm run build -w @careplus/frontend",
+    "build:frontend": "npm run build -w @careplus/frontend",
+    "build:backend": "npm run build -w @careplus/backend",
+    "typecheck": "npm run typecheck -w @careplus/backend && npm run typecheck -w @careplus/frontend",
+    "start:backend": "npm run start -w @careplus/backend",
+    "start:frontend": "npm run start -w @careplus/frontend",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "husky": "^9.1.7"
+  }
 }

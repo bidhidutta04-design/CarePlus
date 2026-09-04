@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Builds
+.next/
+frontend/.next/
+backend/dist/
+dist/
+build/
+out/
+tsconfig.tsbuildinfo
+
+# Env
+.env
+.env*.local
+!.env.example
+frontend/.env
+frontend/.env*.local
+backend/.env
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Test artifacts
+coverage/
+cypress/videos/
+cypress/screenshots/
+playwright-report/
+
+# Misc
+_legacy-vite/
+*.tsbuildinfo

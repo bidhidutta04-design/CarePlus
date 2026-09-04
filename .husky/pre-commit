@@ -1,0 +1,2 @@
+npm run typecheck -w @careplus/backend
+npm run typecheck -w @careplus/frontend
