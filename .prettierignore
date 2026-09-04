@@ -1,0 +1,13 @@
+# Prettier never touches these. frontend/ is frozen — do not remove that line.
+node_modules/
+frontend/
+backend/dist/
+backend/coverage/
+**/dist/
+.next/
+**/.next/
+package-lock.json
+**/package-lock.json
+**/.env*
+.husky/_
+.husky/*.ps1

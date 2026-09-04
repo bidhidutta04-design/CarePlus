@@ -16,12 +16,27 @@
     "build:frontend": "npm run build -w @careplus/frontend",
     "build:backend": "npm run build -w @careplus/backend",
     "typecheck": "npm run typecheck -w @careplus/backend && npm run typecheck -w @careplus/frontend",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "npm run lint -w @careplus/backend",
     "start:backend": "npm run start -w @careplus/backend",
     "start:frontend": "npm run start -w @careplus/frontend",
     "prepare": "husky"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
-    "husky": "^9.1.7"
+    "eslint": "^9.39.5",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.4.1",
+    "prettier": "^3.9.6"
+  },
+  "lint-staged": {
+    "backend/**/*.{ts,js,cjs,mjs,json,md}": [
+      "prettier --write",
+      "eslint --fix --config backend/eslint.config.mjs"
+    ],
+    "*.{json,md,cjs,yml,yaml}": [
+      "prettier --write"
+    ]
   }
 }

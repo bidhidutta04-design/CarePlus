@@ -44,23 +44,23 @@ Backend needs env: copy `backend/.env.example` → `backend/.env` and set `JWT_S
 Base `http://localhost:4000`, envelope `{ data, meta? }`, errors
 `{ error: { code, message, details } }`.
 
-| Method | Route | Auth | Notes |
-|---|---|---|---|
-| GET | `/health` | — | liveness |
-| POST | `/api/auth/login` | — | `{role,name}` → JWT |
-| GET | `/api/auth/roles` | — | 6 workstation roles |
-| GET/POST | `/api/patients` | JWT / Admin,Nurse for POST | `?search=&status=&bloodGroup=` |
-| GET | `/api/patients/:id` | JWT | includes visits, labs, bills |
-| GET/POST | `/api/appointments` | JWT / Admin,Nurse for POST | filters + guarded status machine |
-| PATCH | `/api/appointments/:id/status` | Admin,Doctor,Nurse | Waiting→Triage→Doctor→Completed |
-| GET/PATCH | `/api/beds` | JWT / Admin,Nurse,Doctor | admit/transfer/release + occupancy |
-| GET | `/api/pharmacy` | JWT | FEFO sorted, `?lowStock=true` |
-| POST | `/api/pharmacy/batches` | Admin,Pharmacist | Zod-validated intake |
-| POST | `/api/pharmacy/dispense` | Admin,Pharmacist | stock check → deduct → charge |
-| GET/POST | `/api/lab` | JWT / Admin,Doctor,Nurse order | 4-stage pipeline |
-| PATCH | `/api/lab/:id` | Admin,LabTech | forward-only stage advance |
-| GET/POST | `/api/billing` | JWT / Admin,Cashier invoice | totals + tax computed server-side |
-| POST | `/api/billing/:id/collect` | Admin,Cashier | rejects over-payment |
+| Method    | Route                          | Auth                           | Notes                              |
+| --------- | ------------------------------ | ------------------------------ | ---------------------------------- |
+| GET       | `/health`                      | —                              | liveness                           |
+| POST      | `/api/auth/login`              | —                              | `{role,name}` → JWT                |
+| GET       | `/api/auth/roles`              | —                              | 6 workstation roles                |
+| GET/POST  | `/api/patients`                | JWT / Admin,Nurse for POST     | `?search=&status=&bloodGroup=`     |
+| GET       | `/api/patients/:id`            | JWT                            | includes visits, labs, bills       |
+| GET/POST  | `/api/appointments`            | JWT / Admin,Nurse for POST     | filters + guarded status machine   |
+| PATCH     | `/api/appointments/:id/status` | Admin,Doctor,Nurse             | Waiting→Triage→Doctor→Completed    |
+| GET/PATCH | `/api/beds`                    | JWT / Admin,Nurse,Doctor       | admit/transfer/release + occupancy |
+| GET       | `/api/pharmacy`                | JWT                            | FEFO sorted, `?lowStock=true`      |
+| POST      | `/api/pharmacy/batches`        | Admin,Pharmacist               | Zod-validated intake               |
+| POST      | `/api/pharmacy/dispense`       | Admin,Pharmacist               | stock check → deduct → charge      |
+| GET/POST  | `/api/lab`                     | JWT / Admin,Doctor,Nurse order | 4-stage pipeline                   |
+| PATCH     | `/api/lab/:id`                 | Admin,LabTech                  | forward-only stage advance         |
+| GET/POST  | `/api/billing`                 | JWT / Admin,Cashier invoice    | totals + tax computed server-side  |
+| POST      | `/api/billing/:id/collect`     | Admin,Cashier                  | rejects over-payment               |
 
 Test token: `POST /api/auth/login {"role":"Admin","name":"Tester"}` →
 `Authorization: Bearer <token>`.

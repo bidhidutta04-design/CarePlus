@@ -32,31 +32,43 @@ const resultsSchema = z.object({
 // GET /api/lab?status=&patientId=
 router.get("/", (req, res) => {
   const { status = "", patientId = "" } = req.query as Record<string, string>;
-  const list = db.labs.filter((l) => (!status || l.status === status) && (!patientId || l.patientId === patientId));
+  const list = db.labs.filter(
+    (l) => (!status || l.status === status) && (!patientId || l.patientId === patientId),
+  );
   res.json({ data: list, meta: { total: list.length } });
 });
 
 // POST /api/lab/orders
-router.post("/orders", requireRole("Admin", "Doctor", "Nurse"), validate(orderSchema), (req, res, next) => {
-  const body = req.body as z.infer<typeof orderSchema>;
-  const patient = db.patients.find((p) => p.id === body.patientId);
-  if (!patient) {
-    next(ApiError.notFound("Patient"));
-    return;
-  }
-  const report: LabReport = {
-    id: `LAB-${2001 + db.labs.length}`,
-    testCode: body.testName.split(" ").map((w) => w[0]).join("").slice(0, 5).toUpperCase(),
-    ...body,
-    patientName: patient.fullName,
-    orderDate: new Date().toISOString().slice(0, 10),
-    status: "Ordered",
-    results: [],
-    pathologistSign: "",
-  };
-  db.labs.unshift(report);
-  res.status(201).json({ data: report });
-});
+router.post(
+  "/orders",
+  requireRole("Admin", "Doctor", "Nurse"),
+  validate(orderSchema),
+  (req, res, next) => {
+    const body = req.body as z.infer<typeof orderSchema>;
+    const patient = db.patients.find((p) => p.id === body.patientId);
+    if (!patient) {
+      next(ApiError.notFound("Patient"));
+      return;
+    }
+    const report: LabReport = {
+      id: `LAB-${2001 + db.labs.length}`,
+      testCode: body.testName
+        .split(" ")
+        .map((w) => w[0])
+        .join("")
+        .slice(0, 5)
+        .toUpperCase(),
+      ...body,
+      patientName: patient.fullName,
+      orderDate: new Date().toISOString().slice(0, 10),
+      status: "Ordered",
+      results: [],
+      pathologistSign: "",
+    };
+    db.labs.unshift(report);
+    res.status(201).json({ data: report });
+  },
+);
 
 // PATCH /api/lab/:id — advance stage + save results (forward-only)
 router.patch("/:id", requireRole("Admin", "LabTech"), validate(resultsSchema), (req, res, next) => {
@@ -72,7 +84,8 @@ router.patch("/:id", requireRole("Admin", "LabTech"), validate(resultsSchema), (
   }
   lab.status = status;
   lab.results = results;
-  if (status === "Report Approved") lab.pathologistSign = pathologistSign || req.user?.name || "Pathologist";
+  if (status === "Report Approved")
+    lab.pathologistSign = pathologistSign || req.user?.name || "Pathologist";
   res.json({ data: lab });
 });
 

@@ -17,7 +17,11 @@ const patientSchema = z.object({
   bloodGroup: z.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]),
   allergies: z.array(z.string()).default([]),
   chronicConditions: z.array(z.string()).default([]),
-  emergencyContact: z.object({ name: z.string().min(2), phone: z.string().min(8), relation: z.string().min(2) }),
+  emergencyContact: z.object({
+    name: z.string().min(2),
+    phone: z.string().min(8),
+    relation: z.string().min(2),
+  }),
   admissionStatus: z.enum(["OPD", "Admitted", "Discharged"]).default("OPD"),
 });
 
@@ -29,7 +33,7 @@ router.get("/", (req, res) => {
     (p) =>
       (!status || p.admissionStatus === status) &&
       (!bloodGroup || p.bloodGroup === bloodGroup) &&
-      (!q || [p.id, p.fullName, p.phone].join(" ").toLowerCase().includes(q))
+      (!q || [p.id, p.fullName, p.phone].join(" ").toLowerCase().includes(q)),
   );
   res.json({ data: list, meta: { total: list.length } });
 });

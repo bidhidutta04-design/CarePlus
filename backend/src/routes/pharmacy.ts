@@ -29,7 +29,9 @@ router.get("/", (req, res) => {
   const { search = "", lowStock = "" } = req.query as Record<string, string>;
   const q = search.toLowerCase();
   const list = db.medicines
-    .filter((m) => (!q || [m.brandName, m.genericName, m.batchNo].join(" ").toLowerCase().includes(q)))
+    .filter(
+      (m) => !q || [m.brandName, m.genericName, m.batchNo].join(" ").toLowerCase().includes(q),
+    )
     .filter((m) => lowStock !== "true" || m.stockCount < m.minThreshold || m.status === "Expired")
     .sort((a, b) => a.expiryDate.localeCompare(b.expiryDate));
   res.json({ data: list, meta: { total: list.length } });
@@ -48,30 +50,35 @@ router.post("/batches", requireRole("Admin", "Pharmacist"), validate(batchSchema
 });
 
 // POST /api/pharmacy/dispense — checks stock, deducts, posts charge to billing
-router.post("/dispense", requireRole("Admin", "Pharmacist"), validate(dispenseSchema), (req, res, next) => {
-  const { medicineId, qty, patientId } = req.body as z.infer<typeof dispenseSchema>;
-  const med = db.medicines.find((m) => m.id === medicineId);
-  if (!med) {
-    next(ApiError.notFound("Medicine"));
-    return;
-  }
-  if (med.status === "Expired") {
-    next(ApiError.conflict("Cannot dispense an expired batch"));
-    return;
-  }
-  if (med.stockCount < qty) {
-    next(ApiError.conflict(`Only ${med.stockCount} units in stock`));
-    return;
-  }
-  const patient = db.patients.find((p) => p.id === patientId);
-  if (!patient) {
-    next(ApiError.notFound("Patient"));
-    return;
-  }
-  med.stockCount -= qty;
-  if (med.stockCount < med.minThreshold) med.status = "Low Stock";
-  const charge = med.unitPrice * qty;
-  res.json({ data: { medicine: med, dispensedQty: qty, charge, patientId } });
-});
+router.post(
+  "/dispense",
+  requireRole("Admin", "Pharmacist"),
+  validate(dispenseSchema),
+  (req, res, next) => {
+    const { medicineId, qty, patientId } = req.body as z.infer<typeof dispenseSchema>;
+    const med = db.medicines.find((m) => m.id === medicineId);
+    if (!med) {
+      next(ApiError.notFound("Medicine"));
+      return;
+    }
+    if (med.status === "Expired") {
+      next(ApiError.conflict("Cannot dispense an expired batch"));
+      return;
+    }
+    if (med.stockCount < qty) {
+      next(ApiError.conflict(`Only ${med.stockCount} units in stock`));
+      return;
+    }
+    const patient = db.patients.find((p) => p.id === patientId);
+    if (!patient) {
+      next(ApiError.notFound("Patient"));
+      return;
+    }
+    med.stockCount -= qty;
+    if (med.stockCount < med.minThreshold) med.status = "Low Stock";
+    const charge = med.unitPrice * qty;
+    res.json({ data: { medicine: med, dispensedQty: qty, charge, patientId } });
+  },
+);
 
 export default router;

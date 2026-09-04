@@ -11,36 +11,36 @@ You requested a broad suite of modern web libraries. Below is the **architectura
 
 ### 🟢 The Approved Production Stack (Engineered for Healthcare)
 
-| Technology | Category | Role in CarePlus Healthcare ERP |
-| :--- | :--- | :--- |
-| **Next.js 15+ (App Router) & Turbopack** | Framework & Bundler | Server-side rendering (SSR), Server Components (RSC), API route handlers, and sub-millisecond HMR with Turbopack. |
-| **TypeScript** | Language | Strict type-safety across critical healthcare entities (Patients, Lab Biomarkers, Drug Dosages, Invoices). |
-| **shadcn/ui + Tailwind CSS + PostCSS** | UI Design System | Accessible Radix UI primitives with zero runtime CSS overhead; fully customizable medical components. |
-| **React Hook Form + Zod** | Forms & Clinical Validation | High-performance, un-opinionated forms with strict schema validation for patient triage, prescriptions, and billing. |
-| **TanStack Suite (Query & Table)** | Data Grid & Server State | **TanStack Table** powers virtualized, sortable, filterable medical grids (Patients, Drug Batches). **TanStack Query** handles caching, revalidation, and optimistic mutations. |
-| **Redux Toolkit (RTK)** | Complex Client State | Manages client-heavy multi-step flows: Active OPD Consultation session, Inpatient Bed Matrix, and Cart/Billing builder. |
-| **Liveblocks** | Real-Time Collaboration | **Clinical Presence & Live Sync:** Prevents concurrent edit conflicts when two doctors view the same patient chart; live real-time bed board updates. |
-| **Motion One / Framer Motion** | Micro-interactions | Accessible modal transitions, drawer slide-outs, and layout animations. |
-| **Lenis** | Smooth Scroll | Smooth scrolling across dense medical timeline views and executive analytics. |
-| **Rive / Lottie** | Clinical Animations | Interactive pulse/heartbeat ECG monitors, triage status indicators, and empty-state illustrations. |
-| **Swiper.js** | Touch Sliders | Responsive doctor roster carousels, specialty card sliders, and date picker strips. |
-| **Axios** | HTTP Client | Centralized API client with JWT refresh token interceptors and error handling. |
-| **Cypress** | E2E Testing | End-to-end automated testing for mission-critical paths (e.g. Appointment Booking, Drug Dispensing, Invoicing). |
-| **Husky & lint-staged** | Git Hooks & Quality Guard | Pre-commit type-checking (`tsc --noEmit`), ESLint, and Prettier formatting. |
-| **WDYR (Why Did You Render)** | Performance Profiler | Development-time tracking to eliminate unnecessary re-renders in heavy patient & lab tables. |
+| Technology                               | Category                    | Role in CarePlus Healthcare ERP                                                                                                                                                 |
+| :--------------------------------------- | :-------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Next.js 15+ (App Router) & Turbopack** | Framework & Bundler         | Server-side rendering (SSR), Server Components (RSC), API route handlers, and sub-millisecond HMR with Turbopack.                                                               |
+| **TypeScript**                           | Language                    | Strict type-safety across critical healthcare entities (Patients, Lab Biomarkers, Drug Dosages, Invoices).                                                                      |
+| **shadcn/ui + Tailwind CSS + PostCSS**   | UI Design System            | Accessible Radix UI primitives with zero runtime CSS overhead; fully customizable medical components.                                                                           |
+| **React Hook Form + Zod**                | Forms & Clinical Validation | High-performance, un-opinionated forms with strict schema validation for patient triage, prescriptions, and billing.                                                            |
+| **TanStack Suite (Query & Table)**       | Data Grid & Server State    | **TanStack Table** powers virtualized, sortable, filterable medical grids (Patients, Drug Batches). **TanStack Query** handles caching, revalidation, and optimistic mutations. |
+| **Redux Toolkit (RTK)**                  | Complex Client State        | Manages client-heavy multi-step flows: Active OPD Consultation session, Inpatient Bed Matrix, and Cart/Billing builder.                                                         |
+| **Liveblocks**                           | Real-Time Collaboration     | **Clinical Presence & Live Sync:** Prevents concurrent edit conflicts when two doctors view the same patient chart; live real-time bed board updates.                           |
+| **Motion One / Framer Motion**           | Micro-interactions          | Accessible modal transitions, drawer slide-outs, and layout animations.                                                                                                         |
+| **Lenis**                                | Smooth Scroll               | Smooth scrolling across dense medical timeline views and executive analytics.                                                                                                   |
+| **Rive / Lottie**                        | Clinical Animations         | Interactive pulse/heartbeat ECG monitors, triage status indicators, and empty-state illustrations.                                                                              |
+| **Swiper.js**                            | Touch Sliders               | Responsive doctor roster carousels, specialty card sliders, and date picker strips.                                                                                             |
+| **Axios**                                | HTTP Client                 | Centralized API client with JWT refresh token interceptors and error handling.                                                                                                  |
+| **Cypress**                              | E2E Testing                 | End-to-end automated testing for mission-critical paths (e.g. Appointment Booking, Drug Dispensing, Invoicing).                                                                 |
+| **Husky & lint-staged**                  | Git Hooks & Quality Guard   | Pre-commit type-checking (`tsc --noEmit`), ESLint, and Prettier formatting.                                                                                                     |
+| **WDYR (Why Did You Render)**            | Performance Profiler        | Development-time tracking to eliminate unnecessary re-renders in heavy patient & lab tables.                                                                                    |
 
 ---
 
 ### ⚠️ Incompatible / Redundant Libraries (Excluded & Replaced)
 
-1. ❌ **11ty (Eleventy)**:  
-   * **Why Excluded:** Eleventy is a standalone Node.js static site generator. Mixing Eleventy with Next.js is redundant because Next.js natively handles Static Site Generation (SSG), Incremental Static Regeneration (ISR), and dynamic Server-Side Rendering (SSR).
-2. ❌ **Barba.js**:  
-   * **Why Excluded:** Barba.js is designed for traditional multi-page HTML sites (MPAs) using PJAX. In Next.js (which has its own App Router and React Server Components reconciliation), Barba.js breaks router state and hydration.  
-   * **Modern Replacement:** Next.js `template.tsx` with **Motion / Framer Motion** provides seamless page transition animations natively.
-3. ❌ **Ant Design (antd) + DaisyUI together with shadcn/ui**:  
-   * **Why Excluded:** Mixing three different component libraries causes massive CSS specificity conflicts, style bleeding, and unnecessary bundle bloat.  
-   * **Decision:** Standardize on **shadcn/ui** (Tailwind + Radix primitives), which produces a clean, accessible, and cohesive healthcare design system.
+1. ❌ **11ty (Eleventy)**:
+   - **Why Excluded:** Eleventy is a standalone Node.js static site generator. Mixing Eleventy with Next.js is redundant because Next.js natively handles Static Site Generation (SSG), Incremental Static Regeneration (ISR), and dynamic Server-Side Rendering (SSR).
+2. ❌ **Barba.js**:
+   - **Why Excluded:** Barba.js is designed for traditional multi-page HTML sites (MPAs) using PJAX. In Next.js (which has its own App Router and React Server Components reconciliation), Barba.js breaks router state and hydration.
+   - **Modern Replacement:** Next.js `template.tsx` with **Motion / Framer Motion** provides seamless page transition animations natively.
+3. ❌ **Ant Design (antd) + DaisyUI together with shadcn/ui**:
+   - **Why Excluded:** Mixing three different component libraries causes massive CSS specificity conflicts, style bleeding, and unnecessary bundle bloat.
+   - **Decision:** Standardize on **shadcn/ui** (Tailwind + Radix primitives), which produces a clean, accessible, and cohesive healthcare design system.
 
 ---
 

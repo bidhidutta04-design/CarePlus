@@ -11,7 +11,6 @@ export interface AuthUser {
 }
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       user?: AuthUser;
@@ -59,14 +58,22 @@ export function validate<T extends z.ZodTypeAny>(schema: T) {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction): void {
+export function errorHandler(
+  err: unknown,
+  _req: Request,
+  res: Response,
+  _next: NextFunction,
+): void {
   if (err instanceof ApiError) {
-    res.status(err.status).json({ error: { code: err.code, message: err.message, details: err.details ?? null } });
+    res
+      .status(err.status)
+      .json({ error: { code: err.code, message: err.message, details: err.details ?? null } });
     return;
   }
   console.error(err);
-  res.status(500).json({ error: { code: "INTERNAL", message: "Unexpected server error", details: null } });
+  res
+    .status(500)
+    .json({ error: { code: "INTERNAL", message: "Unexpected server error", details: null } });
 }
 
 export function notFound(_req: Request, res: Response): void {

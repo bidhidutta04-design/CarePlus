@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Lint backend
+        run: npm run lint -w @careplus/backend
+
+      - name: Lint frontend
+        run: npm run lint -w @careplus/frontend
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test backend
+        run: npm run test -w @careplus/backend
+
+      - name: Build
+        run: npm run build

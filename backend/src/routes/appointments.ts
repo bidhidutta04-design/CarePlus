@@ -40,14 +40,19 @@ const TRANSITIONS: Record<string, string[]> = {
 
 // GET /api/appointments?status=&department=&priority=&search=
 router.get("/", (req, res) => {
-  const { status = "", department = "", priority = "", search = "" } = req.query as Record<string, string>;
+  const {
+    status = "",
+    department = "",
+    priority = "",
+    search = "",
+  } = req.query as Record<string, string>;
   const q = search.toLowerCase();
   const list = db.appointments.filter(
     (a) =>
       (!status || a.status === status) &&
       (!department || a.department === department) &&
       (!priority || a.priority === priority) &&
-      (!q || [a.id, a.patientName, a.doctorName, a.tokenNo].join(" ").toLowerCase().includes(q))
+      (!q || [a.id, a.patientName, a.doctorName, a.tokenNo].join(" ").toLowerCase().includes(q)),
   );
   res.json({ data: list, meta: { total: list.length } });
 });
@@ -73,20 +78,25 @@ router.post("/", requireRole("Admin", "Nurse"), validate(createSchema), (req, re
 });
 
 // PATCH /api/appointments/:id/status — guarded state machine
-router.patch("/:id/status", requireRole("Admin", "Doctor", "Nurse"), validate(statusSchema), (req, res, next) => {
-  const appt = db.appointments.find((a) => a.id === req.params.id);
-  if (!appt) {
-    next(ApiError.notFound("Appointment"));
-    return;
-  }
-  const { status, vitals } = req.body as z.infer<typeof statusSchema>;
-  if (!TRANSITIONS[appt.status].includes(status)) {
-    next(ApiError.conflict(`Cannot move ${appt.status} → ${status}`));
-    return;
-  }
-  appt.status = status;
-  if (vitals) appt.vitals = vitals;
-  res.json({ data: appt });
-});
+router.patch(
+  "/:id/status",
+  requireRole("Admin", "Doctor", "Nurse"),
+  validate(statusSchema),
+  (req, res, next) => {
+    const appt = db.appointments.find((a) => a.id === req.params.id);
+    if (!appt) {
+      next(ApiError.notFound("Appointment"));
+      return;
+    }
+    const { status, vitals } = req.body as z.infer<typeof statusSchema>;
+    if (!TRANSITIONS[appt.status].includes(status)) {
+      next(ApiError.conflict(`Cannot move ${appt.status} → ${status}`));
+      return;
+    }
+    appt.status = status;
+    if (vitals) appt.vitals = vitals;
+    res.json({ data: appt });
+  },
+);
 
 export default router;
