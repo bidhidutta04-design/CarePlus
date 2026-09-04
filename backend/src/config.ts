@@ -11,6 +11,7 @@ export const config = {
   frontendUrl: process.env.FRONTEND_URL ?? "http://localhost:3000",
   mongoUri: process.env.MONGODB_URI ?? "mongodb://127.0.0.1:27017/careplus",
   jwtSecret: required("JWT_SECRET", "dev-only-secret-change-me-32-chars-min"),
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "8h",
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "15m",
+  jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
   isProd: process.env.NODE_ENV === "production",
 } as const;
