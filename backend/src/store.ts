@@ -437,4 +437,140 @@ const invoices: Invoice[] = [
   },
 ];
 
-export const db = { patients, appointments, beds, medicines, labs, invoices };
+export interface Doctor {
+  id: string;
+  name: string;
+  qualification: string;
+  department: string;
+  roomNo: string;
+  fee: number;
+  availability: "Available" | "In OPD" | "In Surgery" | "On Leave";
+  schedule: { days: string[]; hours: string; maxSlots: number };
+}
+
+export interface Department {
+  id: string;
+  name: string;
+  hod: string;
+  opdRooms: number;
+  bedCount: number;
+  occupiedBeds: number;
+  doctorsCount: number;
+  icon: string;
+}
+
+const doctors: Doctor[] = [
+  {
+    id: "DOC-101",
+    name: "Dr. Amit Verma",
+    qualification: "MD Cardiology",
+    department: "Cardiology",
+    roomNo: "C-101",
+    fee: 1200,
+    availability: "In OPD",
+    schedule: { days: ["Mon", "Tue", "Thu", "Fri"], hours: "10:00 AM - 2:00 PM", maxSlots: 24 },
+  },
+  {
+    id: "DOC-102",
+    name: "Dr. Neha Kapoor",
+    qualification: "MS Obstetrics",
+    department: "Gynecology",
+    roomNo: "G-204",
+    fee: 900,
+    availability: "Available",
+    schedule: { days: ["Mon", "Wed", "Fri"], hours: "11:00 AM - 3:00 PM", maxSlots: 20 },
+  },
+  {
+    id: "DOC-103",
+    name: "Dr. Rajesh Kumar",
+    qualification: "MS Orthopedics",
+    department: "Orthopedics",
+    roomNo: "O-103",
+    fee: 800,
+    availability: "In Surgery",
+    schedule: { days: ["Tue", "Thu", "Sat"], hours: "9:00 AM - 1:00 PM", maxSlots: 18 },
+  },
+  {
+    id: "DOC-104",
+    name: "Dr. Pooja Sharma",
+    qualification: "MD Pediatrics",
+    department: "Pediatrics",
+    roomNo: "P-301",
+    fee: 700,
+    availability: "In OPD",
+    schedule: {
+      days: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+      hours: "10:00 AM - 1:00 PM",
+      maxSlots: 30,
+    },
+  },
+  {
+    id: "DOC-105",
+    name: "Dr. Sandeep Jain",
+    qualification: "MD General Medicine",
+    department: "General Medicine",
+    roomNo: "M-105",
+    fee: 600,
+    availability: "Available",
+    schedule: {
+      days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+      hours: "9:00 AM - 5:00 PM",
+      maxSlots: 40,
+    },
+  },
+];
+
+const departments: Department[] = [
+  {
+    id: "DEP-01",
+    name: "Cardiology",
+    hod: "Dr. Amit Verma",
+    opdRooms: 3,
+    bedCount: 24,
+    occupiedBeds: 19,
+    doctorsCount: 4,
+    icon: "HeartPulse",
+  },
+  {
+    id: "DEP-02",
+    name: "Orthopedics",
+    hod: "Dr. Rajesh Kumar",
+    opdRooms: 2,
+    bedCount: 30,
+    occupiedBeds: 18,
+    doctorsCount: 3,
+    icon: "Bone",
+  },
+  {
+    id: "DEP-03",
+    name: "Pediatrics",
+    hod: "Dr. Pooja Sharma",
+    opdRooms: 3,
+    bedCount: 20,
+    occupiedBeds: 9,
+    doctorsCount: 5,
+    icon: "Baby",
+  },
+  {
+    id: "DEP-04",
+    name: "Gynecology",
+    hod: "Dr. Neha Kapoor",
+    opdRooms: 2,
+    bedCount: 22,
+    occupiedBeds: 14,
+    doctorsCount: 3,
+    icon: "HeartHandshake",
+  },
+  {
+    id: "DEP-05",
+    name: "General Medicine",
+    hod: "Dr. Sandeep Jain",
+    opdRooms: 4,
+    bedCount: 40,
+    occupiedBeds: 31,
+    doctorsCount: 6,
+    icon: "Stethoscope",
+  },
+];
+
+export const db = { patients, appointments, beds, medicines, labs, invoices, doctors, departments };

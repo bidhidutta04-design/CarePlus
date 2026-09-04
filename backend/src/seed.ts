@@ -6,6 +6,8 @@ import { BedModel } from "./models/Bed.js";
 import { MedicineModel } from "./models/Medicine.js";
 import { LabModel } from "./models/LabReport.js";
 import { InvoiceModel } from "./models/Invoice.js";
+import { DoctorModel } from "./models/Doctor.js";
+import { DepartmentModel } from "./models/Department.js";
 
 async function upsertAll<T extends { id: string }>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -33,6 +35,8 @@ async function main(): Promise<void> {
   await upsertAll(MedicineModel, db.medicines, "medicines");
   await upsertAll(LabModel, db.labs, "lab reports");
   await upsertAll(InvoiceModel, db.invoices, "invoices");
+  await upsertAll(DoctorModel, db.doctors, "doctors");
+  await upsertAll(DepartmentModel, db.departments, "departments");
 
   console.log("seed complete");
   await disconnectDB();
