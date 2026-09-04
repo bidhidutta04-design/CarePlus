@@ -33,7 +33,7 @@ router.post("/login", validate(loginSchema), async (req, res, next) => {
     const sub = `${role}-${Date.now()}`;
     const token = signAccessToken({ sub, name, role });
     const refreshToken = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + config.jwtRefreshExpiresMs);
     await createSession({ refreshToken, sub, name, role, expiresAt });
     res.json({
       data: { token, refreshToken, role, name, expiresIn: config.jwtExpiresIn },
