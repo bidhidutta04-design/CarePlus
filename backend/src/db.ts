@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { config } from "./config.js";
+import { logger } from "./logger.js";
 
 let connecting: Promise<typeof mongoose> | null = null;
 
@@ -18,22 +19,22 @@ export async function connectDB(uri: string = config.mongoUri): Promise<typeof m
       retryWrites: true,
     })
     .then((m) => {
-      console.log(`mongo connected: ${m.connection.host}/${m.connection.name}`);
+      logger.info(`mongo connected: ${m.connection.host}/${m.connection.name}`);
       connecting = null;
       return m;
     })
     .catch((err: unknown) => {
       connecting = null;
-      console.error("mongo connection failed:", err);
+      logger.error({ err }, "mongo connection failed");
       throw err;
     });
 
   mongoose.connection.on("error", (err) => {
-    console.error("mongo error:", err);
+    logger.error({ err }, "mongo error");
   });
 
   mongoose.connection.on("disconnected", () => {
-    console.warn("mongo disconnected");
+    logger.warn("mongo disconnected");
   });
 
   return connecting;

@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { config } from "./config.js";
 import { ApiError } from "./errors.js";
+import { logger } from "./logger.js";
 import rateLimit from "express-rate-limit";
 
 export interface AuthUser {
@@ -21,6 +22,19 @@ declare global {
   }
 }
 
+export function verifyAccessToken(token: string): AuthUser {
+  // Try every known secret — supports rotation (sign with newest, verify any)
+  let lastError: unknown = null;
+  for (const secret of config.jwtAccessSecrets) {
+    try {
+      return jwt.verify(token, secret) as AuthUser;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Token expired or invalid");
+}
+
 export function requireAuth(req: Request, _res: Response, next: NextFunction): void {
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) {
@@ -28,8 +42,7 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction): v
     return;
   }
   try {
-    // Access tokens are always signed with the access secret
-    req.user = jwt.verify(header.slice(7), config.jwtAccessSecret) as AuthUser;
+    req.user = verifyAccessToken(header.slice(7));
     next();
   } catch {
     next(ApiError.unauthorized("Token expired or invalid"));
@@ -132,14 +145,11 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     return;
   }
 
-  // Unknown — log with requestId, hide details in prod
-  const logPayload = {
-    requestId,
-    err: anyErr?.message ?? String(err),
-    stack: (err as Error)?.stack,
-  };
-  if (config.isProd) console.error(JSON.stringify(logPayload));
-  else console.error(err);
+  // Unknown — structured log with requestId, hide details in prod
+  logger.error(
+    { requestId, err: anyErr?.message ?? String(err), stack: (err as Error)?.stack },
+    "unhandled error",
+  );
 
   res.status(500).json({
     error: {

@@ -18,11 +18,20 @@ export const config = {
   port: Number(process.env.PORT ?? 4000),
   frontendUrl: process.env.FRONTEND_URL ?? "http://localhost:3000",
   mongoUri: process.env.MONGODB_URI ?? "mongodb://127.0.0.1:27017/careplus",
-  // Separate secrets — refresh falls back to access secret for backward compat
+  // Separate secrets — refresh falls back to access secret for backward compat.
+  // Comma-separated list supported for rotation: sign with the last, verify any.
   jwtAccessSecret: required(
     "JWT_ACCESS_SECRET",
     process.env.JWT_SECRET ?? "dev-only-access-secret-change-me-32-chars-min",
   ),
+  jwtAccessSecrets: (
+    process.env.JWT_ACCESS_SECRET ??
+    process.env.JWT_SECRET ??
+    "dev-only-access-secret-change-me-32-chars-min"
+  )
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
   // Keep JWT_SECRET as alias for backward compat + single-secret deployments
   jwtSecret: required("JWT_SECRET", "dev-only-secret-change-me-32-chars-min"),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "15m",

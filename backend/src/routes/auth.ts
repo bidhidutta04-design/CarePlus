@@ -36,7 +36,10 @@ function signAccessToken(payload: {
   role: string;
   jti: string;
 }): string {
-  return jwt.sign(payload, config.jwtAccessSecret, {
+  // Always sign with the newest secret (last in rotation list)
+  const secrets = config.jwtAccessSecrets;
+  const active = secrets[secrets.length - 1];
+  return jwt.sign(payload, active, {
     expiresIn: config.jwtExpiresIn,
     issuer: "careplus-api",
     audience: "careplus-web",
