@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { addAppointment } from "@/store/clinicalSlice";
-import { seedDoctors } from "@/lib/seed-data";
+import { useDoctors } from "@/hooks/useDoctors";
+import { apiClient } from "@/lib/apiClient";
 
 const schema = z.object({
   patientId: z.string().min(1, "Select a patient"),
@@ -27,35 +28,51 @@ const SLOTS = ["09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:3
 export function BookAppointmentModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const dispatch = useAppDispatch();
   const patients = useAppSelector((s) => s.clinical.patients);
-  const appointments = useAppSelector((s) => s.clinical.appointments);
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<Form>({
+  const { data: doctorsData } = useDoctors();
+  const doctors = doctorsData?.data ?? [];
+  const today = new Date().toISOString().slice(0, 10);
+
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<Form>({
     resolver: zodResolver(schema),
-    defaultValues: { date: "2026-09-04", priority: "Routine", timeSlot: "10:00 AM" },
+    defaultValues: { date: today, priority: "Routine", timeSlot: "10:00 AM" },
   });
 
-  const onSubmit = (v: Form): void => {
+  const onSubmit = async (v: Form): Promise<void> => {
     const patient = patients.find((p) => p.id === v.patientId);
-    const doctor = seedDoctors.find((d) => d.id === v.doctorId);
+    const doctor = doctors.find((d) => d.id === v.doctorId);
     if (!patient || !doctor) return;
-    const n = 1255 + appointments.length + 1;
-    dispatch(
-      addAppointment({
-        id: `APT-${n}`,
-        tokenNo: `OPD-${String(appointments.length + 1).padStart(2, "0")}`,
+    try {
+      const { data } = await apiClient.post<{ data: { id: string; tokenNo: string } }>("/appointments", {
         patientId: patient.id,
-        patientName: patient.fullName,
-        department: doctor.department,
         doctorId: doctor.id,
         doctorName: doctor.name,
+        department: doctor.department,
         date: v.date,
         timeSlot: v.timeSlot,
         priority: v.priority,
         reason: v.reason,
-        status: "Waiting",
-      })
-    );
-    reset();
-    onClose();
+      });
+      dispatch(
+        addAppointment({
+          id: data.data.id,
+          tokenNo: data.data.tokenNo,
+          patientId: patient.id,
+          patientName: patient.fullName,
+          department: doctor.department,
+          doctorId: doctor.id,
+          doctorName: doctor.name,
+          date: v.date,
+          timeSlot: v.timeSlot,
+          priority: v.priority,
+          reason: v.reason,
+          status: "Waiting",
+        })
+      );
+      reset();
+      onClose();
+    } catch {
+      // error handled by apiClient interceptor
+    }
   };
 
   return (
@@ -74,7 +91,7 @@ export function BookAppointmentModal({ open, onClose }: { open: boolean; onClose
             <label className="grid gap-1 text-sm">Doctor
               <select {...register("doctorId")} className="rounded-lg border border-input bg-background px-3 py-2">
                 <option value="">Select…</option>
-                {seedDoctors.map((d) => <option key={d.id} value={d.id}>{d.name} — {d.department}</option>)}
+                {doctors.map((d) => <option key={d.id} value={d.id}>{d.name} — {d.department}</option>)}
               </select>
               {errors.doctorId && <span className="text-xs text-red-600">{errors.doctorId.message}</span>}
             </label>
@@ -98,8 +115,8 @@ export function BookAppointmentModal({ open, onClose }: { open: boolean; onClose
             </label>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit">Book token</Button>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
+            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Booking…" : "Book token"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
