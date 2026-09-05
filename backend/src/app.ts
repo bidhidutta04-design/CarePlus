@@ -1,4 +1,5 @@
 import express from "express";
+import compression from "compression";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import helmet from "helmet";
@@ -25,6 +26,7 @@ export function createApp(): express.Express {
 
   app.use(helmet());
   app.use(cors({ origin: config.frontendUrl, credentials: true }));
+  app.use(compression() as unknown as import("express").RequestHandler);
   app.use(express.json({ limit: "100kb" }));
   app.use(cookieParser() as unknown as import("express").RequestHandler);
   app.use(requestId);

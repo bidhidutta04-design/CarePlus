@@ -13,19 +13,27 @@ import { StaffModel } from "./models/Staff.js";
 import { AuditModel } from "./models/Audit.js";
 
 async function upsertAll<T extends { id: string }>(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  model: { updateOne: (filter: any, doc: any, opts: any) => Promise<any> },
+  model: {
+    bulkWrite: (ops: never, opts?: never) => Promise<unknown>;
+    countDocuments: () => Promise<number>;
+  },
   docs: T[],
   label: string,
 ): Promise<void> {
-  let inserted = 0;
-  let kept = 0;
-  for (const doc of docs) {
-    const res = await model.updateOne({ id: doc.id }, doc, { upsert: true });
-    if (res.upsertedCount) inserted += 1;
-    else kept += 1;
+  if (docs.length === 0) {
+    console.log(`${label}: 0 docs`);
+    return;
   }
-  console.log(`${label}: ${inserted} inserted, ${kept} already present`);
+  const before = await model.countDocuments();
+  const ops = docs.map((doc) => ({
+    updateOne: { filter: { id: doc.id }, update: { $set: doc }, upsert: true },
+  }));
+  const res = await model.bulkWrite(ops as never, { ordered: false } as never);
+  const after = await model.countDocuments();
+  const inserted = after - before;
+  const matched = docs.length - inserted;
+  void res;
+  console.log(`${label}: ${inserted} inserted, ${matched} already present`);
 }
 
 async function main(): Promise<void> {
