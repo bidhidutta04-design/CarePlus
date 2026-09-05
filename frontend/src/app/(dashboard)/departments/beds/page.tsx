@@ -75,7 +75,7 @@ export default function BedBoardPage() {
           const list = beds.filter((b) => b.ward === ward);
           const occ = list.filter((b) => b.status === "Occupied").length;
           return (
-            <Card key={ward} className="rounded-2xl shadow-card">
+            <Card key={ward} className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>{ward}</CardTitle>
                 <span className="text-sm text-muted-foreground">{occ}/{list.length} occupied</span>

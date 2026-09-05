@@ -37,7 +37,7 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
         actions={<Button asChild variant="outline" size="sm"><Link href="/patients"><ArrowLeft className="mr-1.5 h-4 w-4" />Back</Link></Button>}
       />
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="rounded-2xl shadow-card">
+        <Card className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
           <CardHeader><CardTitle>Demographics</CardTitle></CardHeader>
           <CardContent className="grid gap-1 text-sm">
             <p><span className="text-muted-foreground">Age / Gender:</span> {p.age}yr / {p.gender}</p>
@@ -54,7 +54,7 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
             <p className="text-muted-foreground">{p.chronicConditions.join(", ") || "None"}</p>
           </CardContent>
         </Card>
-        <Card className="rounded-2xl shadow-card lg:col-span-2">
+        <Card className="rounded-2xl shadow-card lg:col-span-2 transition-all duration-200 hover:shadow-md hover:-translate-y-px">
           <CardHeader><CardTitle>Vitals trend (pulse)</CardTitle></CardHeader>
           <CardContent>
             {p.vitalsHistory.length === 0 ? (
@@ -84,7 +84,7 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
         </Card>
       </div>
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
-        <Card className="rounded-2xl shadow-card">
+        <Card className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
           <CardHeader><CardTitle>Visit timeline</CardTitle></CardHeader>
           <CardContent className="grid gap-2 text-sm">
             {visits.length === 0 && <p className="text-muted-foreground">No visits.</p>}
@@ -98,7 +98,7 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
             ))}
           </CardContent>
         </Card>
-        <Card className="rounded-2xl shadow-card">
+        <Card className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
           <CardHeader><CardTitle>Diagnostics</CardTitle></CardHeader>
           <CardContent className="grid gap-2 text-sm">
             {labs.filter((l) => l.patientId === p.id).map((l) => (
@@ -115,7 +115,7 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
             {labs.filter((l) => l.patientId === p.id).length === 0 && <p className="text-muted-foreground">No lab orders.</p>}
           </CardContent>
         </Card>
-        <Card className="rounded-2xl shadow-card">
+        <Card className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
           <CardHeader><CardTitle>Billing</CardTitle></CardHeader>
           <CardContent className="grid gap-2 text-sm">
             {invoices.filter((i) => i.patientId === p.id).map((i) => (

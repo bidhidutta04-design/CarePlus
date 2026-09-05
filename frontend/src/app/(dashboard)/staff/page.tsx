@@ -17,7 +17,7 @@ export default function StaffPage() {
         {SHIFTS.map((shift) => {
           const list: StaffMember[] = seedStaff.filter((s) => s.shift === shift);
           return (
-            <Card key={shift} className="rounded-2xl shadow-card">
+            <Card key={shift} className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
               <CardHeader><CardTitle>{shift} shift <span className="text-sm font-normal text-muted-foreground">({list.length})</span></CardTitle></CardHeader>
               <CardContent className="grid gap-2">
                 {list.map((s) => (

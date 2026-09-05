@@ -23,7 +23,7 @@ export default function SettingsPage() {
     <div>
       <PageHeader title="Settings & Audit" subtitle="Hospital profile, scheduling, theme, immutable trail" />
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="rounded-2xl shadow-card">
+        <Card className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
           <CardHeader><CardTitle>Hospital profile</CardTitle></CardHeader>
           <CardContent className="grid gap-3">
             <label className="grid gap-1 text-sm">Hospital name
@@ -47,7 +47,7 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="rounded-2xl shadow-card">
+        <Card className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
           <CardHeader><CardTitle>Role-based access (read-only matrix)</CardTitle></CardHeader>
           <CardContent className="overflow-x-auto">
             <Table>
@@ -68,7 +68,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </div>
-      <Card className="mt-4 rounded-2xl shadow-card">
+      <Card className="mt-4 rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
         <CardHeader className="flex flex-row items-center gap-2">
           <Lock className="h-4 w-4 text-muted-foreground" />
           <CardTitle>Immutable system audit log</CardTitle>

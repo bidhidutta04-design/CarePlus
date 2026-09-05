@@ -77,7 +77,7 @@ export default function DashboardPage() {
           sub="Cash 38% • UPI 34% • Card 28%"
           tone="green"
         />
-        <Card className="rounded-2xl shadow-card">
+        <Card className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Bed Occupancy</CardTitle></CardHeader>
           <CardContent className="flex items-center gap-4">
             <svg width="96" height="96" viewBox="0 0 100 100" role="img" aria-label={`Bed occupancy ${occupancy} percent`}>
@@ -100,7 +100,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <Card className="rounded-2xl shadow-card">
+        <Card className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
           <CardHeader><CardTitle>Hourly OPD Load</CardTitle></CardHeader>
           <CardContent>
             <div className="flex h-36 items-end justify-between gap-1.5" role="img" aria-label="Hourly OPD traffic bar chart">
@@ -116,7 +116,7 @@ export default function DashboardPage() {
             <p className="mt-2 text-xs text-muted-foreground">Peak intake 11 AM (41 patients). Plan triage cover 10 AM – 1 PM.</p>
           </CardContent>
         </Card>
-        <Card className="rounded-2xl shadow-card">
+        <Card className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
           <CardHeader><CardTitle>Department Patient Share</CardTitle></CardHeader>
           <CardContent className="grid gap-3">
             {deptShare.map((d) => (
@@ -134,7 +134,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <Card className="mt-4 rounded-2xl shadow-card">
+      <Card className="mt-4 rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Live Token Queue — Next 5</CardTitle>
           <Button variant="outline" size="sm" asChild><Link href="/appointments">Open queue</Link></Button>

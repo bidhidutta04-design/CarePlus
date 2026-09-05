@@ -65,7 +65,7 @@ export default function LabPage() {
       </div>
       <div className="mt-4 grid gap-4 xl:grid-cols-4 md:grid-cols-2">
         {STAGES.map((stage) => (
-          <Card key={stage} className="rounded-2xl shadow-card">
+          <Card key={stage} className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
             <CardHeader><CardTitle className="text-sm">{stage} ({labs.filter((l) => l.status === stage).length})</CardTitle></CardHeader>
             <CardContent className="grid gap-2">
               {labs.filter((l) => l.status === stage).map((l) => (

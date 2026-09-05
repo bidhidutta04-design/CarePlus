@@ -44,7 +44,7 @@ export default function BillingPage() {
         <KpiCard icon={Hourglass} label="Pending balances" value={formatINR(pending)} rawValue={pending} formatValue={(n) => formatINR(Math.round(n))} sub="Follow-up queue" tone="amber" />
         <KpiCard icon={ShieldCheck} label="TPA claims in progress" value={String(tpa)} rawValue={tpa} formatValue={(n) => String(Math.round(n))} sub="Star Health, HDFC Ergo" tone="red" />
       </div>
-      <Card className="mt-4 rounded-2xl shadow-card">
+      <Card className="mt-4 rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Invoices</CardTitle>
           <select value={filter} onChange={(e) => setFilter(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm" aria-label="Filter invoices">

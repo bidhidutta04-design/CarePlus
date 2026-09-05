@@ -42,7 +42,7 @@ export default function ReportsPage() {
         <KpiCard icon={BedDouble} label="Bed occupancy" value={`${occupancy}%`} rawValue={occupancy} formatValue={(n) => `${Math.round(n)}%`} sub="Turnover 4.1 days avg stay" tone="blue" />
         <KpiCard icon={Repeat} label="Completed consults" value={String(completed)} rawValue={completed} formatValue={(n) => String(Math.round(n))} sub="This week in queue" tone="amber" />
       </div>
-      <Card className="mt-4 rounded-2xl shadow-card">
+      <Card className="mt-4 rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
         <CardHeader><CardTitle>Monthly revenue (₹L)</CardTitle></CardHeader>
         <CardContent>
           <div className="flex h-44 items-end gap-3" role="img" aria-label="Monthly revenue chart">

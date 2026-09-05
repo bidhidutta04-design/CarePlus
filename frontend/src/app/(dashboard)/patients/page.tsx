@@ -89,7 +89,7 @@ export default function PatientsPage() {
         subtitle={`${filtered.length} of ${patients.length} patients`}
         actions={<Button size="sm" onClick={() => setAddOpen(true)}><UserPlus className="mr-1.5 h-4 w-4" />Add patient</Button>}
       />
-      <Card className="rounded-2xl shadow-card">
+      <Card className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
         <CardHeader>
           <CardTitle className="text-base">Search & filters</CardTitle>
           <div className="grid gap-2 pt-2 sm:grid-cols-2 lg:grid-cols-5">

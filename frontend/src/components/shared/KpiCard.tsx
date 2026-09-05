@@ -29,7 +29,7 @@ export function KpiCard({
     red: "bg-[#fde8e8] text-[#c62828]",
   };
   return (
-    <Card className="rounded-2xl shadow-card">
+    <Card className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
         <span className={cn("rounded-xl p-2", tones[tone])}>

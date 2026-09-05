@@ -21,7 +21,7 @@ export default function DepartmentsPage() {
         {seedDepartments.map((d) => {
           const pct = d.bedCount === 0 ? 0 : Math.round((d.occupiedBeds / d.bedCount) * 100);
           return (
-            <Card key={d.id} className="rounded-2xl shadow-card">
+            <Card key={d.id} className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
               <CardHeader>
                 <CardTitle>{d.name}</CardTitle>
                 <p className="text-sm text-muted-foreground">HOD: {d.hod}</p>

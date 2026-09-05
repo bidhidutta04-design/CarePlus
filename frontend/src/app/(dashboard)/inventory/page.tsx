@@ -20,7 +20,7 @@ export default function InventoryPage() {
         <KpiCard icon={TriangleAlert} label="Below threshold" value={String(low.length)} rawValue={low.length} formatValue={(n) => String(Math.round(n))} sub={low.map((l) => l.name).slice(0, 2).join(", ") || "All healthy"} tone="red" />
         <KpiCard icon={IndianRupee} label="Stock value" value={`₹${(value / 100000).toFixed(2)}L`} rawValue={value / 100000} formatValue={(n) => `₹${n.toFixed(2)}L`} sub="At unit cost" tone="green" />
       </div>
-      <Card className="mt-4 rounded-2xl shadow-card">
+      <Card className="mt-4 rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
         <CardHeader><CardTitle>Supplies ledger</CardTitle></CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>

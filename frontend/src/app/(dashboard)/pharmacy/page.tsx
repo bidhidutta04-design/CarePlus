@@ -84,7 +84,7 @@ export default function PharmacyPage() {
         <KpiCard icon={TriangleAlert} label="Low stock / expired" value={`${low} / ${exp}`} rawValue={low + exp} formatValue={(n) => { const total = Math.round(n); const l = Math.round((low / (low + exp || 1)) * total); return `${l} / ${total - l}`; }} sub="Reorder flagged SKUs" tone="red" />
         <KpiCard icon={CalendarClock} label="Expiring < 60 days" value={String(soon)} rawValue={soon} formatValue={(n) => String(Math.round(n))} sub="Dispense first" tone="amber" />
       </div>
-      <Card className="mt-4 rounded-2xl shadow-card">
+      <Card className="mt-4 rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Drug batches</CardTitle>
           <Input placeholder="Search brand, generic, batch…" value={query} onChange={(e) => setQuery(e.target.value)} className="max-w-64" aria-label="Search medicines" />

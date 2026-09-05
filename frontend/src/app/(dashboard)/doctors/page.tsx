@@ -38,7 +38,7 @@ export default function DoctorsPage() {
         breakpoints={{ 640: { slidesPerView: 2 }, 1100: { slidesPerView: 3 } }} className="!pb-10">
         {list.map((d) => (
           <SwiperSlide key={d.id}>
-            <Card className="h-full rounded-2xl shadow-card">
+            <Card className="h-full rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
               <CardHeader>
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -62,7 +62,7 @@ export default function DoctorsPage() {
       </Swiper>
 
       {selDoc && (
-        <Card className="rounded-2xl shadow-card">
+        <Card className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>{selDoc.name} — today&apos;s queue</CardTitle>
             <Button variant="ghost" size="sm" onClick={() => setSelected(null)}>Close</Button>
