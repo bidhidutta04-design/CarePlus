@@ -10,6 +10,7 @@ import {
 } from "../repos/medicineRepo.js";
 import { getPatientById } from "../repos/patientRepo.js";
 import { paginateArray, parsePagination } from "../paginate.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -33,32 +34,27 @@ const dispenseSchema = z.object({
 });
 
 // GET /api/pharmacy?search=&lowStock=true&page=&limit= — FEFO sorted
-router.get("/", async (req, res, next) => {
-  try {
+router.get(
+  "/",
+  asyncHandler(async (req, res) => {
     const { search = "", lowStock = "" } = req.query as Record<string, string>;
     const pagination = parsePagination(req.query as Record<string, string>);
     const list = await listMedicines({ search, lowStock });
     const { data, meta } = paginateArray(list, pagination);
     res.json({ data, meta });
-  } catch (err) {
-    next(err);
-  }
-});
+  }),
+);
 
 // POST /api/pharmacy/batches
 router.post(
   "/batches",
   requireRole("Admin", "Pharmacist"),
   validate(batchSchema),
-  async (req, res, next) => {
-    try {
-      const body = req.body as z.infer<typeof batchSchema>;
-      const med = await createMedicine(body);
-      res.status(201).json({ data: med });
-    } catch (err) {
-      next(err);
-    }
-  },
+  asyncHandler(async (req, res) => {
+    const body = req.body as z.infer<typeof batchSchema>;
+    const med = await createMedicine(body);
+    res.status(201).json({ data: med });
+  }),
 );
 
 // POST /api/pharmacy/dispense — checks stock, deducts, posts charge to billing
@@ -66,34 +62,30 @@ router.post(
   "/dispense",
   requireRole("Admin", "Pharmacist"),
   validate(dispenseSchema),
-  async (req, res, next) => {
-    try {
-      const { medicineId, qty, patientId } = req.body as z.infer<typeof dispenseSchema>;
-      const med = await getMedicineById(medicineId);
-      if (!med) {
-        next(ApiError.notFound("Medicine"));
-        return;
-      }
-      if (med.status === "Expired") {
-        next(ApiError.conflict("Cannot dispense an expired batch"));
-        return;
-      }
-      if (med.stockCount < qty) {
-        next(ApiError.conflict(`Only ${med.stockCount} units in stock`));
-        return;
-      }
-      const patient = await getPatientById(patientId);
-      if (!patient) {
-        next(ApiError.notFound("Patient"));
-        return;
-      }
-      const updated = await dispenseMedicine(medicineId, qty);
-      const charge = med.unitPrice * qty;
-      res.json({ data: { medicine: updated, dispensedQty: qty, charge, patientId } });
-    } catch (err) {
-      next(err);
+  asyncHandler(async (req, res, next) => {
+    const { medicineId, qty, patientId } = req.body as z.infer<typeof dispenseSchema>;
+    const med = await getMedicineById(medicineId);
+    if (!med) {
+      next(ApiError.notFound("Medicine"));
+      return;
     }
-  },
+    if (med.status === "Expired") {
+      next(ApiError.conflict("Cannot dispense an expired batch"));
+      return;
+    }
+    if (med.stockCount < qty) {
+      next(ApiError.conflict(`Only ${med.stockCount} units in stock`));
+      return;
+    }
+    const patient = await getPatientById(patientId);
+    if (!patient) {
+      next(ApiError.notFound("Patient"));
+      return;
+    }
+    const updated = await dispenseMedicine(medicineId, qty);
+    const charge = med.unitPrice * qty;
+    res.json({ data: { medicine: updated, dispensedQty: qty, charge, patientId } });
+  }),
 );
 
 export default router;

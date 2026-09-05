@@ -5,6 +5,7 @@ import { auditLog, requireAuth, requireRole, validate } from "../middleware.js";
 import { createPatient, getPatientById, listPatients } from "../repos/patientRepo.js";
 import { db } from "../store.js";
 import { paginateArray, parsePagination } from "../paginate.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -29,21 +30,21 @@ const patientSchema = z.object({
 });
 
 // GET /api/patients?search=&status=&bloodGroup=&page=&limit=&sort=&order=
-router.get("/", async (req, res, next) => {
-  try {
+router.get(
+  "/",
+  asyncHandler(async (req, res) => {
     const { search = "", status = "", bloodGroup = "" } = req.query as Record<string, string>;
     const pagination = parsePagination(req.query as Record<string, string>);
     const list = await listPatients({ search, status, bloodGroup });
     const { data, meta } = paginateArray(list, pagination);
     res.json({ data, meta });
-  } catch (err) {
-    next(err);
-  }
-});
+  }),
+);
 
 // GET /api/patients/:id
-router.get("/:id", async (req, res, next) => {
-  try {
+router.get(
+  "/:id",
+  asyncHandler(async (req, res, next) => {
     const p = await getPatientById(req.params.id);
     if (!p) {
       next(ApiError.notFound("Patient"));
@@ -53,20 +54,19 @@ router.get("/:id", async (req, res, next) => {
     const labOrders = db.labs.filter((l) => l.patientId === p.id);
     const bills = db.invoices.filter((i) => i.patientId === p.id);
     res.json({ data: { ...p, visits, labOrders, bills } });
-  } catch (err) {
-    next(err);
-  }
-});
+  }),
+);
 
 // POST /api/patients
-router.post("/", requireRole("Admin", "Nurse"), validate(patientSchema), async (req, res, next) => {
-  try {
+router.post(
+  "/",
+  requireRole("Admin", "Nurse"),
+  validate(patientSchema),
+  asyncHandler(async (req, res) => {
     const body = req.body as z.infer<typeof patientSchema>;
     const patient = await createPatient(body);
     res.status(201).json({ data: patient });
-  } catch (err) {
-    next(err);
-  }
-});
+  }),
+);
 
 export default router;

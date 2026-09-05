@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { config } from "../config.js";
 import { validate } from "../middleware.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../errors.js";
 import {
   createSession,
@@ -57,8 +58,10 @@ function refreshCookieOptions(maxAgeMs: number): {
 }
 
 // POST /api/auth/login — role-based workstation sign-in (mock IdP; replace with LDAP/SSO).
-router.post("/login", validate(loginSchema), async (req, res, next) => {
-  try {
+router.post(
+  "/login",
+  validate(loginSchema),
+  asyncHandler(async (req, res) => {
     const { role, name } = req.body as { role: string; name: string };
     const sub = `${role}-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
     const jti = crypto.randomUUID();
@@ -71,14 +74,14 @@ router.post("/login", validate(loginSchema), async (req, res, next) => {
     res.json({
       data: { token, refreshToken, role, name, expiresIn: config.jwtExpiresIn },
     });
-  } catch (err) {
-    next(err);
-  }
-});
+  }),
+);
 
 // POST /api/auth/refresh — exchange valid refresh token for new pair (rotation + reuse detection)
-router.post("/refresh", validate(refreshSchema), async (req, res, next) => {
-  try {
+router.post(
+  "/refresh",
+  validate(refreshSchema),
+  asyncHandler(async (req, res, next) => {
     const raw =
       (req.body as { refreshToken?: string }).refreshToken ??
       (req.cookies as Record<string, string>)?.refreshToken;
@@ -115,24 +118,22 @@ router.post("/refresh", validate(refreshSchema), async (req, res, next) => {
     });
     res.cookie("refreshToken", newRefreshToken, refreshCookieOptions(config.jwtRefreshExpiresMs));
     res.json({ data: { token, refreshToken: newRefreshToken, expiresIn: config.jwtExpiresIn } });
-  } catch (err) {
-    next(err);
-  }
-});
+  }),
+);
 
 // POST /api/auth/logout — revoke refresh token (body or httpOnly cookie)
-router.post("/logout", validate(refreshSchema), async (req, res, next) => {
-  try {
+router.post(
+  "/logout",
+  validate(refreshSchema),
+  asyncHandler(async (req, res) => {
     const raw =
       (req.body as { refreshToken?: string }).refreshToken ??
       (req.cookies as Record<string, string>)?.refreshToken;
     if (raw) await deleteSession(raw);
     res.clearCookie("refreshToken", { path: "/api/auth" });
     res.json({ data: { ok: true } });
-  } catch (err) {
-    next(err);
-  }
-});
+  }),
+);
 
 // GET /api/auth/roles
 router.get("/roles", (_req, res) => {

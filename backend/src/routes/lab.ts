@@ -5,6 +5,7 @@ import { auditLog, requireAuth, requireRole, validate } from "../middleware.js";
 import { createLab, getLabById, listLabs, updateLab } from "../repos/labRepo.js";
 import { getPatientById } from "../repos/patientRepo.js";
 import { paginateArray, parsePagination } from "../paginate.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -33,50 +34,45 @@ const resultsSchema = z.object({
 });
 
 // GET /api/lab?status=&patientId=&page=&limit=
-router.get("/", async (req, res, next) => {
-  try {
+router.get(
+  "/",
+  asyncHandler(async (req, res) => {
     const { status = "", patientId = "" } = req.query as Record<string, string>;
     const pagination = parsePagination(req.query as Record<string, string>);
     const list = await listLabs({ status, patientId });
     const { data, meta } = paginateArray(list, pagination);
     res.json({ data, meta });
-  } catch (err) {
-    next(err);
-  }
-});
+  }),
+);
 
 // POST /api/lab/orders
 router.post(
   "/orders",
   requireRole("Admin", "Doctor", "Nurse"),
   validate(orderSchema),
-  async (req, res, next) => {
-    try {
-      const body = req.body as z.infer<typeof orderSchema>;
-      const patient = await getPatientById(body.patientId);
-      if (!patient) {
-        next(ApiError.notFound("Patient"));
-        return;
-      }
-      const testCode = body.testName
-        .split(" ")
-        .map((w) => w[0])
-        .join("")
-        .slice(0, 5)
-        .toUpperCase();
-      const report = await createLab({
-        testCode,
-        testName: body.testName,
-        patientId: body.patientId,
-        patientName: patient.fullName,
-        doctorName: body.doctorName,
-        orderDate: new Date().toISOString().slice(0, 10),
-      });
-      res.status(201).json({ data: report });
-    } catch (err) {
-      next(err);
+  asyncHandler(async (req, res, next) => {
+    const body = req.body as z.infer<typeof orderSchema>;
+    const patient = await getPatientById(body.patientId);
+    if (!patient) {
+      next(ApiError.notFound("Patient"));
+      return;
     }
-  },
+    const testCode = body.testName
+      .split(" ")
+      .map((w) => w[0])
+      .join("")
+      .slice(0, 5)
+      .toUpperCase();
+    const report = await createLab({
+      testCode,
+      testName: body.testName,
+      patientId: body.patientId,
+      patientName: patient.fullName,
+      doctorName: body.doctorName,
+      orderDate: new Date().toISOString().slice(0, 10),
+    });
+    res.status(201).json({ data: report });
+  }),
 );
 
 // PATCH /api/lab/:id — advance stage + save results (forward-only)
@@ -84,31 +80,27 @@ router.patch(
   "/:id",
   requireRole("Admin", "LabTech"),
   validate(resultsSchema),
-  async (req, res, next) => {
-    try {
-      const lab = await getLabById(req.params.id);
-      if (!lab) {
-        next(ApiError.notFound("Lab report"));
-        return;
-      }
-      const { status, results, pathologistSign } = req.body as z.infer<typeof resultsSchema>;
-      if (STAGES.indexOf(status) < STAGES.indexOf(lab.status)) {
-        next(ApiError.conflict(`Cannot regress ${lab.status} → ${status}`));
-        return;
-      }
-      const updated = await updateLab(req.params.id, {
-        status,
-        results,
-        pathologistSign:
-          status === "Report Approved"
-            ? pathologistSign || req.user?.name || "Pathologist"
-            : pathologistSign,
-      });
-      res.json({ data: updated });
-    } catch (err) {
-      next(err);
+  asyncHandler(async (req, res, next) => {
+    const lab = await getLabById(req.params.id);
+    if (!lab) {
+      next(ApiError.notFound("Lab report"));
+      return;
     }
-  },
+    const { status, results, pathologistSign } = req.body as z.infer<typeof resultsSchema>;
+    if (STAGES.indexOf(status) < STAGES.indexOf(lab.status)) {
+      next(ApiError.conflict(`Cannot regress ${lab.status} → ${status}`));
+      return;
+    }
+    const updated = await updateLab(req.params.id, {
+      status,
+      results,
+      pathologistSign:
+        status === "Report Approved"
+          ? pathologistSign || req.user?.name || "Pathologist"
+          : pathologistSign,
+    });
+    res.json({ data: updated });
+  }),
 );
 
 export default router;

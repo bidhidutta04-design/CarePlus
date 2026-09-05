@@ -10,6 +10,7 @@ import {
 } from "../repos/appointmentRepo.js";
 import { getPatientById } from "../repos/patientRepo.js";
 import { paginateArray, parsePagination } from "../paginate.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -47,8 +48,9 @@ const TRANSITIONS: Record<string, string[]> = {
 };
 
 // GET /api/appointments?status=&department=&priority=&search=&page=&limit=
-router.get("/", async (req, res, next) => {
-  try {
+router.get(
+  "/",
+  asyncHandler(async (req, res) => {
     const {
       status = "",
       department = "",
@@ -59,14 +61,15 @@ router.get("/", async (req, res, next) => {
     const list = await listAppointments({ status, department, priority, search });
     const { data, meta } = paginateArray(list, pagination);
     res.json({ data, meta });
-  } catch (err) {
-    next(err);
-  }
-});
+  }),
+);
 
 // POST /api/appointments
-router.post("/", requireRole("Admin", "Nurse"), validate(createSchema), async (req, res, next) => {
-  try {
+router.post(
+  "/",
+  requireRole("Admin", "Nurse"),
+  validate(createSchema),
+  asyncHandler(async (req, res, next) => {
     const body = req.body as z.infer<typeof createSchema>;
     const patient = await getPatientById(body.patientId);
     if (!patient) {
@@ -78,34 +81,28 @@ router.post("/", requireRole("Admin", "Nurse"), validate(createSchema), async (r
       patientName: patient.fullName,
     });
     res.status(201).json({ data: appt });
-  } catch (err) {
-    next(err);
-  }
-});
+  }),
+);
 
 // PATCH /api/appointments/:id/status — guarded state machine
 router.patch(
   "/:id/status",
   requireRole("Admin", "Doctor", "Nurse"),
   validate(statusSchema),
-  async (req, res, next) => {
-    try {
-      const appt = await getAppointmentById(req.params.id);
-      if (!appt) {
-        next(ApiError.notFound("Appointment"));
-        return;
-      }
-      const { status, vitals } = req.body as z.infer<typeof statusSchema>;
-      if (!TRANSITIONS[appt.status].includes(status)) {
-        next(ApiError.conflict(`Cannot move ${appt.status} → ${status}`));
-        return;
-      }
-      const updated = await updateAppointmentStatus(req.params.id, status, vitals);
-      res.json({ data: updated });
-    } catch (err) {
-      next(err);
+  asyncHandler(async (req, res, next) => {
+    const appt = await getAppointmentById(req.params.id);
+    if (!appt) {
+      next(ApiError.notFound("Appointment"));
+      return;
     }
-  },
+    const { status, vitals } = req.body as z.infer<typeof statusSchema>;
+    if (!TRANSITIONS[appt.status].includes(status)) {
+      next(ApiError.conflict(`Cannot move ${appt.status} → ${status}`));
+      return;
+    }
+    const updated = await updateAppointmentStatus(req.params.id, status, vitals);
+    res.json({ data: updated });
+  }),
 );
 
 export default router;

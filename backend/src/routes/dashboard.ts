@@ -13,13 +13,15 @@ import { BedModel } from "../models/Bed.js";
 import { MedicineModel } from "../models/Medicine.js";
 import { LabModel } from "../models/LabReport.js";
 import { InvoiceModel } from "../models/Invoice.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = Router();
 router.use(requireAuth);
 
 // GET /api/dashboard/stats — one call for the overview screen
-router.get("/stats", async (_req, res, next) => {
-  try {
+router.get(
+  "/stats",
+  asyncHandler(async (_req, res) => {
     if (mongoose.connection.readyState === 1) {
       const [
         patientAgg,
@@ -143,9 +145,7 @@ router.get("/stats", async (_req, res, next) => {
         billing: { billed, collected, pending: billed - collected },
       },
     });
-  } catch (err) {
-    next(err);
-  }
-});
+  }),
+);
 
 export default router;
