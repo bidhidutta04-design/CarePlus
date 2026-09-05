@@ -21,7 +21,7 @@ const schema = z.object({
   specialization: z.string().optional(),
   department: z.string().min(1, "Department is required"),
   roomNo: z.string().min(1, "Room number is required"),
-  fee: z.coerce.number().int().min(0, "Fee is required"),
+  fee: z.coerce.number().int().min(1, "Fee is required"),
   availability: z.enum(["Available", "In OPD", "In Surgery", "On Leave"]),
   days: z.string().min(1, "Select at least one day"),
   hours: z.string().min(3, "Hours are required"),
@@ -46,6 +46,12 @@ export function AddDoctorModal({ open, onClose }: { open: boolean; onClose: () =
   } = useForm<Form>({
     resolver: zodResolver(schema),
     defaultValues: {
+      name: "",
+      qualification: "",
+      specialization: "",
+      department: "",
+      roomNo: "",
+      fee: 0,
       availability: "Available",
       days: "Mon,Tue,Wed,Thu,Fri",
       hours: "09:00 AM - 05:00 PM",
@@ -111,7 +117,7 @@ export function AddDoctorModal({ open, onClose }: { open: boolean; onClose: () =
             </label>
             <label className="grid gap-1 text-sm">
               Department
-              <Select value={watch("department")} onValueChange={(v) => setValue("department", v, { shouldValidate: true })}>
+              <Select value={watch("department") || undefined} onValueChange={(v) => setValue("department", v, { shouldValidate: true })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>

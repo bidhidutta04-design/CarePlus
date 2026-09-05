@@ -23,17 +23,18 @@ export default function DashboardPage() {
   const inpatients = patients.filter((p) => p.admissionStatus === "Admitted").length;
   const outpatients = patients.filter((p) => p.admissionStatus === "OPD").length;
   const occupied = beds.filter((b) => b.status === "Occupied").length;
-  const occupancy = Math.round((occupied / beds.length) * 100);
-  const todayRevenue = invoices.filter((i) => i.date === "2026-09-03").reduce((s, i) => s + i.paidAmount, 0);
+  const occupancy = beds.length > 0 ? Math.round((occupied / beds.length) * 100) : 0;
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const todayRevenue = invoices.filter((i) => i.date === todayISO).reduce((s, i) => s + i.paidAmount, 0);
   const emergencies = appointments.filter((a) => a.priority === "Emergency" && a.status !== "Completed" && a.status !== "Cancelled");
-  const maxOPD = Math.max(...hourlyOPD.map((h) => h.count));
+  const maxOPD = hourlyOPD.length > 0 ? Math.max(...hourlyOPD.map((h) => h.count)) : 0;
   const circ = 2 * Math.PI * 44;
 
   const opdCount = activeQueue.length + 3;
 
   return (
     <div>
-      <PageHeader title="Executive Dashboard" subtitle="Hospital operations at a glance — Thursday, 04 Sep 2026" />
+      <PageHeader title="Executive Dashboard" subtitle={`Hospital operations at a glance — ${new Date().toLocaleDateString("en-US", { weekday: "long", day: "2-digit", month: "short", year: "numeric" })}`} />
 
       {emergencies.length > 0 && (
         <div className="mb-4 flex items-center gap-2 overflow-hidden rounded-2xl border border-red-200 bg-[#fde8e8] px-4 py-2.5 text-sm font-medium text-[#c62828]">
