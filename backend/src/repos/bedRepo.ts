@@ -1,11 +1,7 @@
-import mongoose from "mongoose";
 import { BedModel } from "../models/Bed.js";
 import { db } from "../store.js";
 import { paginateArray, sanitizeSort, type Pagination } from "../paginate.js";
-
-function isDbReady(): boolean {
-  return mongoose.connection.readyState === 1;
-}
+import { isDbReady } from "../db.js";
 
 export async function listBeds(
   filter: { ward?: string; status?: string },

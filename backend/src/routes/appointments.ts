@@ -98,7 +98,8 @@ router.patch(
       return;
     }
     const { status, vitals } = req.body as z.infer<typeof statusSchema>;
-    if (!TRANSITIONS[appt.status].includes(status)) {
+    const allowed = TRANSITIONS[appt.status] ?? [];
+    if (!allowed.includes(status)) {
       next(ApiError.conflict(`Cannot move ${appt.status} → ${status}`));
       return;
     }

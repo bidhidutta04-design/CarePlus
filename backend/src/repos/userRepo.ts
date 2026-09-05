@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
-import mongoose from "mongoose";
 import { UserModel } from "../models/User.js";
+import { isDbReady } from "../db.js";
 
 const SALT_ROUNDS = 10;
 
@@ -19,7 +19,7 @@ export async function findUserByEmail(email: string): Promise<{
   passwordHash: string;
   isActive: boolean;
 } | null> {
-  if (mongoose.connection.readyState !== 1) return null;
+  if (!isDbReady()) return null;
   const doc = await UserModel.findOne({ email: email.toLowerCase().trim() }).lean();
   if (!doc) return null;
   const u = doc as unknown as {

@@ -1,11 +1,7 @@
-import mongoose from "mongoose";
 import { StaffModel } from "../models/Staff.js";
 import { db } from "../store.js";
 import { paginateArray, sanitizeSort, type Pagination } from "../paginate.js";
-
-function isDbReady(): boolean {
-  return mongoose.connection.readyState === 1;
-}
+import { isDbReady } from "../db.js";
 
 export async function listStaff(
   filter: { shift?: string; department?: string },

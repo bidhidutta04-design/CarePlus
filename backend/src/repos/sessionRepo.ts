@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
-import mongoose from "mongoose";
 import { SessionModel } from "../models/Session.js";
+import { isDbReady } from "../db.js";
 
 // In-memory fallback for when Mongo is not connected (dev without DB).
 // Holds hashes only — never plaintext tokens.
@@ -14,10 +14,6 @@ const memorySessions: Array<{
   isRevoked: boolean;
   expiresAt: Date;
 }> = [];
-
-function isDbReady(): boolean {
-  return mongoose.connection.readyState === 1;
-}
 
 export function hashToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
@@ -125,13 +121,4 @@ export async function revokeFamily(familyId: string): Promise<void> {
     return;
   }
   await SessionModel.updateMany({ familyId }, { isRevoked: true });
-}
-
-export async function deleteSessionsBySub(sub: string): Promise<void> {
-  if (!isDbReady()) {
-    for (let i = memorySessions.length - 1; i >= 0; i -= 1)
-      if (memorySessions[i].sub === sub) memorySessions.splice(i, 1);
-    return;
-  }
-  await SessionModel.deleteMany({ sub });
 }

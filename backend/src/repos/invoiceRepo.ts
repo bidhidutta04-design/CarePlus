@@ -1,13 +1,9 @@
-import mongoose from "mongoose";
 import { InvoiceModel } from "../models/Invoice.js";
 import { db } from "../store.js";
 import { ID_SPECS, nextId } from "./counterRepo.js";
 import { paginateArray, sanitizeSort, type Pagination } from "../paginate.js";
 import { billTotals } from "../utils/money.js";
-
-function isDbReady(): boolean {
-  return mongoose.connection.readyState === 1;
-}
+import { isDbReady } from "../db.js";
 
 export async function listInvoices(
   filter: { status?: string; patientId?: string },

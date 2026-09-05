@@ -11,8 +11,11 @@ export async function connectDB(uri: string = config.mongoUri): Promise<typeof m
 
   connecting = mongoose
     .connect(uri, {
-      autoIndex: true,
+      autoIndex: !config.isProd,
       serverSelectionTimeoutMS: 5000,
+      maxPoolSize: 20,
+      minPoolSize: 2,
+      retryWrites: true,
     })
     .then((m) => {
       console.log(`mongo connected: ${m.connection.host}/${m.connection.name}`);
@@ -40,4 +43,8 @@ export async function disconnectDB(): Promise<void> {
   if (mongoose.connection.readyState !== 0) {
     await mongoose.disconnect();
   }
+}
+
+export function isDbReady(): boolean {
+  return mongoose.connection.readyState === 1;
 }

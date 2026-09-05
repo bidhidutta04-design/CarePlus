@@ -23,10 +23,6 @@ export const config = {
     "JWT_ACCESS_SECRET",
     process.env.JWT_SECRET ?? "dev-only-access-secret-change-me-32-chars-min",
   ),
-  jwtRefreshSecret: required(
-    "JWT_REFRESH_SECRET",
-    process.env.JWT_SECRET ?? "dev-only-refresh-secret-change-me-32-chars-min",
-  ),
   // Keep JWT_SECRET as alias for backward compat + single-secret deployments
   jwtSecret: required("JWT_SECRET", "dev-only-secret-change-me-32-chars-min"),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "15m",

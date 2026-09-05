@@ -1,12 +1,8 @@
-import mongoose from "mongoose";
 import { MedicineModel } from "../models/Medicine.js";
 import { db } from "../store.js";
 import { ID_SPECS, nextId } from "./counterRepo.js";
 import { paginateArray, sanitizeSort, type Pagination } from "../paginate.js";
-
-function isDbReady(): boolean {
-  return mongoose.connection.readyState === 1;
-}
+import { isDbReady } from "../db.js";
 
 export async function listMedicines(
   filter: { search?: string; lowStock?: string },

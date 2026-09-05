@@ -1,11 +1,7 @@
-import mongoose from "mongoose";
 import { AuditModel } from "../models/Audit.js";
 import { db } from "../store.js";
 import { paginateArray, type Pagination } from "../paginate.js";
-
-function isDbReady(): boolean {
-  return mongoose.connection.readyState === 1;
-}
+import { isDbReady } from "../db.js";
 
 export async function listAudits(
   pagination?: Pagination,

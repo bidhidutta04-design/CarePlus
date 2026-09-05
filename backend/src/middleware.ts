@@ -16,6 +16,7 @@ declare global {
   namespace Express {
     interface Request {
       user?: AuthUser;
+      requestId?: string;
     }
   }
 }
@@ -61,24 +62,8 @@ export function validate<T extends z.ZodTypeAny>(schema: T) {
   };
 }
 
-export function validateQuery<T extends z.ZodTypeAny>(schema: T) {
-  return (req: Request, _res: Response, next: NextFunction): void => {
-    const parsed = schema.safeParse(req.query);
-    if (!parsed.success) {
-      next(ApiError.badRequest("Invalid query", parsed.error.flatten()));
-      return;
-    }
-    // Keep parsed query but preserve unknown keys for pagination passthrough
-    req.query = { ...req.query, ...(parsed.data as Record<string, string>) } as Record<
-      string,
-      string
-    >;
-    next();
-  };
-}
-
 export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction): void {
-  const requestId = (req as unknown as Record<string, unknown>).requestId as string | undefined;
+  const requestId = req.requestId;
 
   if (err instanceof ApiError) {
     res.status(err.status).json({
@@ -172,7 +157,7 @@ export function notFound(_req: Request, res: Response): void {
 
 export function requestId(req: Request, res: Response, next: NextFunction): void {
   const id = (req.headers["x-request-id"] as string) || crypto.randomUUID();
-  (req as unknown as Record<string, unknown>).requestId = id;
+  req.requestId = id;
   res.setHeader("X-Request-Id", id);
   next();
 }
@@ -198,7 +183,7 @@ export function auditLog(req: Request, _res: Response, next: NextFunction): void
     void import("./repos/auditRepo.js").then(({ createAudit }) => {
       const action = `${req.method} ${req.path}`;
       void createAudit({
-        id: `AUD-${Date.now()}`,
+        id: `AUD-${crypto.randomUUID()}`,
         timestamp: new Date(),
         user: req.user?.name ?? "unknown",
         role: req.user?.role ?? "unknown",

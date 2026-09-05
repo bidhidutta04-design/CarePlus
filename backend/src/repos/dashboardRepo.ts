@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import { isDbReady } from "../db.js";
 import { listPatients } from "./patientRepo.js";
 import { listAppointments } from "./appointmentRepo.js";
 import { listBeds } from "./bedRepo.js";
@@ -19,10 +19,6 @@ export interface DashboardStats {
   medicines: { total: number; lowStock: number };
   labs: { total: number; pending: number };
   billing: { billed: number; collected: number; pending: number };
-}
-
-function isDbReady(): boolean {
-  return mongoose.connection.readyState === 1;
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {

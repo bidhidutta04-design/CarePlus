@@ -1,9 +1,5 @@
-import mongoose from "mongoose";
 import { CounterModel } from "../models/Counter.js";
-
-function isDbReady(): boolean {
-  return mongoose.connection.readyState === 1;
-}
+import { isDbReady } from "../db.js";
 
 export interface IdSpec {
   key: string;
