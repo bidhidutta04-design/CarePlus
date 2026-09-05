@@ -51,24 +51,24 @@ export function createApp(): express.Express {
   });
 
   app.use("/docs", docsRoutes);
-  app.get("/api/openapi.json", (_req, res) => {
+  app.get("/api/v1/openapi.json", (_req, res) => {
     // also serve at the API prefix for contract freeze checks
     void import("./docs/openapi.js").then(({ openApiSpec }) => res.json(openApiSpec));
   });
 
-  app.use("/api/auth", authLimiter as unknown as import("express").RequestHandler, authRoutes);
-  app.use("/api/patients", patientRoutes);
-  app.use("/api/appointments", appointmentRoutes);
-  app.use("/api/beds", bedRoutes);
-  app.use("/api/pharmacy", pharmacyRoutes);
-  app.use("/api/lab", labRoutes);
-  app.use("/api/billing", billingRoutes);
-  app.use("/api/doctors", doctorRoutes);
-  app.use("/api/departments", departmentRoutes);
-  app.use("/api/inventory", inventoryRoutes);
-  app.use("/api/staff", staffRoutes);
-  app.use("/api/audit", auditRoutes);
-  app.use("/api/dashboard", dashboardRoutes);
+  app.use("/api/v1/auth", authLimiter as unknown as import("express").RequestHandler, authRoutes);
+  app.use("/api/v1/patients", patientRoutes);
+  app.use("/api/v1/appointments", appointmentRoutes);
+  app.use("/api/v1/beds", bedRoutes);
+  app.use("/api/v1/pharmacy", pharmacyRoutes);
+  app.use("/api/v1/lab", labRoutes);
+  app.use("/api/v1/billing", billingRoutes);
+  app.use("/api/v1/doctors", doctorRoutes);
+  app.use("/api/v1/departments", departmentRoutes);
+  app.use("/api/v1/inventory", inventoryRoutes);
+  app.use("/api/v1/staff", staffRoutes);
+  app.use("/api/v1/audit", auditRoutes);
+  app.use("/api/v1/dashboard", dashboardRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

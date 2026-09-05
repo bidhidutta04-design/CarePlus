@@ -11,7 +11,7 @@ describe("billing and pagination", () => {
   it("creates an invoice and rejects over-payment", async () => {
     const token = await adminToken();
     const create = await request(createApp())
-      .post("/api/billing/invoices")
+      .post("/api/v1/billing/invoices")
       .set("Authorization", `Bearer ${token}`)
       .send({
         patientId: "CP-1001",
@@ -24,13 +24,13 @@ describe("billing and pagination", () => {
     const total = create.body.data.totalAmount as number;
 
     const over = await request(createApp())
-      .post(`/api/billing/${id}/collect`)
+      .post(`/api/v1/billing/${id}/collect`)
       .set("Authorization", `Bearer ${token}`)
       .send({ amount: total + 100 });
     expect(over.status).toBe(400);
 
     const ok = await request(createApp())
-      .post(`/api/billing/${id}/collect`)
+      .post(`/api/v1/billing/${id}/collect`)
       .set("Authorization", `Bearer ${token}`)
       .send({ amount: 100 });
     expect(ok.status).toBe(200);
@@ -40,7 +40,7 @@ describe("billing and pagination", () => {
   it("rejects discount larger than subtotal", async () => {
     const token = await adminToken();
     const res = await request(createApp())
-      .post("/api/billing/invoices")
+      .post("/api/v1/billing/invoices")
       .set("Authorization", `Bearer ${token}`)
       .send({
         patientId: "CP-1001",
@@ -54,7 +54,7 @@ describe("billing and pagination", () => {
   it("paginates patient lists and supports sorting", async () => {
     const token = await adminToken();
     const p1 = await request(createApp())
-      .get("/api/patients?page=1&limit=2")
+      .get("/api/v1/patients?page=1&limit=2")
       .set("Authorization", `Bearer ${token}`);
     expect(p1.status).toBe(200);
     expect(p1.body.meta.page).toBe(1);
@@ -63,7 +63,7 @@ describe("billing and pagination", () => {
     expect(p1.body.meta.total).toBeGreaterThanOrEqual(6);
 
     const sorted = await request(createApp())
-      .get("/api/patients?sort=fullName&order=desc&page=1&limit=2")
+      .get("/api/v1/patients?sort=fullName&order=desc&page=1&limit=2")
       .set("Authorization", `Bearer ${token}`);
     expect(sorted.status).toBe(200);
     expect(
@@ -74,7 +74,7 @@ describe("billing and pagination", () => {
   it("beds endpoint returns occupancy meta alongside pagination", async () => {
     const token = await adminToken();
     const res = await request(createApp())
-      .get("/api/beds?page=1&limit=2")
+      .get("/api/v1/beds?page=1&limit=2")
       .set("Authorization", `Bearer ${token}`);
     expect(res.status).toBe(200);
     expect(res.body.meta.total).toBeGreaterThan(0);
@@ -84,12 +84,12 @@ describe("billing and pagination", () => {
   it("audit log grows after a mutating request", async () => {
     const token = await adminToken();
     const before = await request(createApp())
-      .get("/api/audit")
+      .get("/api/v1/audit")
       .set("Authorization", `Bearer ${token}`);
     const totalBefore = before.body.meta.total as number;
 
     await request(createApp())
-      .post("/api/patients")
+      .post("/api/v1/patients")
       .set("Authorization", `Bearer ${token}`)
       .send({
         fullName: "Audit Test",
@@ -108,7 +108,7 @@ describe("billing and pagination", () => {
     await new Promise((r) => setTimeout(r, 50));
 
     const after = await request(createApp())
-      .get("/api/audit")
+      .get("/api/v1/audit")
       .set("Authorization", `Bearer ${token}`);
     expect(after.body.meta.total).toBeGreaterThan(totalBefore);
   });
@@ -116,7 +116,7 @@ describe("billing and pagination", () => {
   it("audit log rejects non-admin roles", async () => {
     const nurse = await loginAs("Nurse");
     const res = await request(createApp())
-      .get("/api/audit")
+      .get("/api/v1/audit")
       .set("Authorization", `Bearer ${nurse}`);
     expect(res.status).toBe(403);
   });

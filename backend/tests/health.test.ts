@@ -13,7 +13,7 @@ describe("api boot gate", () => {
   });
 
   it("rejects unauthenticated api access with the error envelope", async () => {
-    const res = await request(createApp()).get("/api/patients");
+    const res = await request(createApp()).get("/api/v1/patients");
     expect(res.status).toBe(401);
     expect(res.body.error.code).toBe("UNAUTHORIZED");
   });

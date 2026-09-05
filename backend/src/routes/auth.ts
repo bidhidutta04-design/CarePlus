@@ -57,7 +57,7 @@ function refreshCookieOptions(maxAgeMs: number): {
     httpOnly: true,
     secure: config.isProd,
     sameSite: "strict",
-    path: "/api/auth",
+    path: "/api/v1/auth",
     maxAge: maxAgeMs,
   };
 }
@@ -157,7 +157,7 @@ router.post(
       (req.body as { refreshToken?: string }).refreshToken ??
       (req.cookies as Record<string, string>)?.refreshToken;
     if (raw) await deleteSession(raw);
-    res.clearCookie("refreshToken", { path: "/api/auth" });
+    res.clearCookie("refreshToken", { path: "/api/v1/auth" });
     res.json({ data: { ok: true } });
   }),
 );

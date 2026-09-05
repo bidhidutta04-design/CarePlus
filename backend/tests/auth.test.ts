@@ -5,14 +5,14 @@ import { loginAs, loginRaw } from "./helpers.js";
 
 describe("auth guards", () => {
   it("rejects unauthenticated access", async () => {
-    const res = await request(createApp()).get("/api/patients");
+    const res = await request(createApp()).get("/api/v1/patients");
     expect(res.status).toBe(401);
     expect(res.body.error.code).toBe("UNAUTHORIZED");
   });
 
   it("rejects invalid token", async () => {
     const res = await request(createApp())
-      .get("/api/patients")
+      .get("/api/v1/patients")
       .set("Authorization", "Bearer bad-token");
     expect(res.status).toBe(401);
   });
@@ -20,7 +20,7 @@ describe("auth guards", () => {
   it("allows authenticated access", async () => {
     const token = await loginAs("Admin");
     const res = await request(createApp())
-      .get("/api/patients")
+      .get("/api/v1/patients")
       .set("Authorization", `Bearer ${token}`);
     expect(res.status).toBe(200);
   });
@@ -28,7 +28,7 @@ describe("auth guards", () => {
   it("forbids wrong role on protected POST", async () => {
     const token = await loginAs("LabTech");
     const res = await request(createApp())
-      .post("/api/patients")
+      .post("/api/v1/patients")
       .set("Authorization", `Bearer ${token}`)
       .send({
         fullName: "Should Fail",
@@ -62,7 +62,7 @@ describe("auth guards", () => {
 
   it("refresh flow works and logout revokes", async () => {
     const loginRes = await request(createApp())
-      .post("/api/auth/login")
+      .post("/api/v1/auth/login")
       .send({ email: "admin@careplus.local", password: "Test@1234" });
     const { refreshToken } = loginRes.body.data as {
       token: string;
@@ -70,14 +70,16 @@ describe("auth guards", () => {
     };
     expect(refreshToken).toBeTruthy();
 
-    const refreshRes = await request(createApp()).post("/api/auth/refresh").send({ refreshToken });
+    const refreshRes = await request(createApp())
+      .post("/api/v1/auth/refresh")
+      .send({ refreshToken });
     expect(refreshRes.status).toBe(200);
     expect(refreshRes.body.data.token).toBeTruthy();
 
-    const logoutRes = await request(createApp()).post("/api/auth/logout").send({ refreshToken });
+    const logoutRes = await request(createApp()).post("/api/v1/auth/logout").send({ refreshToken });
     expect(logoutRes.status).toBe(200);
 
-    const again = await request(createApp()).post("/api/auth/refresh").send({ refreshToken });
+    const again = await request(createApp()).post("/api/v1/auth/refresh").send({ refreshToken });
     expect(again.status).toBe(401);
   });
 });

@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:4000",
+      "url": "http://localhost:4000/api/v1",
       "description": "local"
     }
   ],
@@ -63,7 +63,7 @@
         "security": []
       }
     },
-    "/api/auth/login": {
+    "/api/v1/auth/login": {
       "post": {
         "summary": "Credential login (email + password)",
         "requestBody": {
@@ -82,7 +82,7 @@
         "security": []
       }
     },
-    "/api/auth/refresh": {
+    "/api/v1/auth/refresh": {
       "post": {
         "summary": "Refresh access token",
         "responses": {
@@ -93,7 +93,7 @@
         "security": []
       }
     },
-    "/api/auth/logout": {
+    "/api/v1/auth/logout": {
       "post": {
         "summary": "Revoke refresh token",
         "responses": {
@@ -104,7 +104,7 @@
         "security": []
       }
     },
-    "/api/auth/roles": {
+    "/api/v1/auth/roles": {
       "get": {
         "summary": "List roles",
         "responses": {
@@ -115,7 +115,7 @@
         "security": []
       }
     },
-    "/api/patients": {
+    "/api/v1/patients": {
       "get": {
         "summary": "List patients",
         "parameters": [
@@ -163,7 +163,7 @@
         }
       }
     },
-    "/api/patients/{id}": {
+    "/api/v1/patients/{id}": {
       "get": {
         "summary": "Get patient with visits",
         "responses": {
@@ -173,7 +173,7 @@
         }
       }
     },
-    "/api/appointments": {
+    "/api/v1/appointments": {
       "get": {
         "summary": "List appointments",
         "responses": {
@@ -191,7 +191,7 @@
         }
       }
     },
-    "/api/appointments/{id}/status": {
+    "/api/v1/appointments/{id}/status": {
       "patch": {
         "summary": "Advance status (guarded)",
         "responses": {
@@ -201,7 +201,7 @@
         }
       }
     },
-    "/api/beds": {
+    "/api/v1/beds": {
       "get": {
         "summary": "List beds with occupancy",
         "responses": {
@@ -211,7 +211,7 @@
         }
       }
     },
-    "/api/beds/{id}": {
+    "/api/v1/beds/{id}": {
       "patch": {
         "summary": "Admit / release bed",
         "responses": {
@@ -221,7 +221,7 @@
         }
       }
     },
-    "/api/pharmacy": {
+    "/api/v1/pharmacy": {
       "get": {
         "summary": "List medicines FEFO",
         "responses": {
@@ -231,7 +231,7 @@
         }
       }
     },
-    "/api/pharmacy/batches": {
+    "/api/v1/pharmacy/batches": {
       "post": {
         "summary": "Add batch",
         "responses": {
@@ -241,7 +241,7 @@
         }
       }
     },
-    "/api/pharmacy/dispense": {
+    "/api/v1/pharmacy/dispense": {
       "post": {
         "summary": "Dispense and charge",
         "responses": {
@@ -251,7 +251,7 @@
         }
       }
     },
-    "/api/lab": {
+    "/api/v1/lab": {
       "get": {
         "summary": "List lab reports",
         "responses": {
@@ -261,7 +261,7 @@
         }
       }
     },
-    "/api/lab/orders": {
+    "/api/v1/lab/orders": {
       "post": {
         "summary": "Order test",
         "responses": {
@@ -271,7 +271,7 @@
         }
       }
     },
-    "/api/lab/{id}": {
+    "/api/v1/lab/{id}": {
       "patch": {
         "summary": "Advance stage",
         "responses": {
@@ -281,7 +281,7 @@
         }
       }
     },
-    "/api/billing": {
+    "/api/v1/billing": {
       "get": {
         "summary": "List invoices",
         "responses": {
@@ -291,7 +291,7 @@
         }
       }
     },
-    "/api/billing/invoices": {
+    "/api/v1/billing/invoices": {
       "post": {
         "summary": "Create invoice",
         "responses": {
@@ -301,7 +301,7 @@
         }
       }
     },
-    "/api/billing/{id}/collect": {
+    "/api/v1/billing/{id}/collect": {
       "post": {
         "summary": "Collect payment",
         "responses": {
@@ -311,7 +311,7 @@
         }
       }
     },
-    "/api/doctors": {
+    "/api/v1/doctors": {
       "get": {
         "summary": "List doctors",
         "responses": {
@@ -321,7 +321,7 @@
         }
       }
     },
-    "/api/departments": {
+    "/api/v1/departments": {
       "get": {
         "summary": "List departments",
         "responses": {
@@ -331,7 +331,7 @@
         }
       }
     },
-    "/api/inventory": {
+    "/api/v1/inventory": {
       "get": {
         "summary": "List inventory",
         "responses": {
@@ -341,7 +341,7 @@
         }
       }
     },
-    "/api/inventory/{id}/restock": {
+    "/api/v1/inventory/{id}/restock": {
       "post": {
         "summary": "Restock item",
         "responses": {
@@ -351,7 +351,7 @@
         }
       }
     },
-    "/api/staff": {
+    "/api/v1/staff": {
       "get": {
         "summary": "List staff",
         "responses": {
@@ -361,7 +361,7 @@
         }
       }
     },
-    "/api/audit": {
+    "/api/v1/audit": {
       "get": {
         "summary": "List audit log (append-only)",
         "responses": {
@@ -371,7 +371,7 @@
         }
       }
     },
-    "/api/dashboard/stats": {
+    "/api/v1/dashboard/stats": {
       "get": {
         "summary": "Dashboard aggregates",
         "responses": {

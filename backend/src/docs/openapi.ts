@@ -6,7 +6,7 @@ export const openApiSpec = {
     description:
       "Hospital Management REST API — patients, appointments, beds, pharmacy, lab, billing, doctors, departments, inventory, staff, audit and dashboard. All responses use { data, meta? } and errors use { error: { code, message, details } }.",
   },
-  servers: [{ url: "http://localhost:4000", description: "local" }],
+  servers: [{ url: "http://localhost:4000/api/v1", description: "local" }],
   components: {
     securitySchemes: {
       bearerAuth: { type: "http" as const, scheme: "bearer", bearerFormat: "JWT" },
@@ -39,7 +39,7 @@ export const openApiSpec = {
         security: [],
       },
     },
-    "/api/auth/login": {
+    "/api/v1/auth/login": {
       post: {
         summary: "Credential login (email + password)",
         requestBody: {
@@ -57,24 +57,24 @@ export const openApiSpec = {
         security: [],
       },
     },
-    "/api/auth/refresh": {
+    "/api/v1/auth/refresh": {
       post: {
         summary: "Refresh access token",
         responses: { "200": { description: "new token" } },
         security: [],
       },
     },
-    "/api/auth/logout": {
+    "/api/v1/auth/logout": {
       post: {
         summary: "Revoke refresh token",
         responses: { "200": { description: "revoked" } },
         security: [],
       },
     },
-    "/api/auth/roles": {
+    "/api/v1/auth/roles": {
       get: { summary: "List roles", responses: { "200": { description: "roles" } }, security: [] },
     },
-    "/api/patients": {
+    "/api/v1/patients": {
       get: {
         summary: "List patients",
         parameters: [
@@ -87,72 +87,74 @@ export const openApiSpec = {
       },
       post: { summary: "Create patient", responses: { "201": { description: "created" } } },
     },
-    "/api/patients/{id}": {
+    "/api/v1/patients/{id}": {
       get: { summary: "Get patient with visits", responses: { "200": { description: "patient" } } },
     },
-    "/api/appointments": {
+    "/api/v1/appointments": {
       get: { summary: "List appointments", responses: { "200": { description: "list" } } },
       post: { summary: "Create appointment", responses: { "201": { description: "created" } } },
     },
-    "/api/appointments/{id}/status": {
+    "/api/v1/appointments/{id}/status": {
       patch: {
         summary: "Advance status (guarded)",
         responses: { "200": { description: "updated" } },
       },
     },
-    "/api/beds": {
+    "/api/v1/beds": {
       get: { summary: "List beds with occupancy", responses: { "200": { description: "list" } } },
     },
-    "/api/beds/{id}": {
+    "/api/v1/beds/{id}": {
       patch: { summary: "Admit / release bed", responses: { "200": { description: "updated" } } },
     },
-    "/api/pharmacy": {
+    "/api/v1/pharmacy": {
       get: { summary: "List medicines FEFO", responses: { "200": { description: "list" } } },
     },
-    "/api/pharmacy/batches": {
+    "/api/v1/pharmacy/batches": {
       post: { summary: "Add batch", responses: { "201": { description: "created" } } },
     },
-    "/api/pharmacy/dispense": {
+    "/api/v1/pharmacy/dispense": {
       post: { summary: "Dispense and charge", responses: { "200": { description: "dispensed" } } },
     },
-    "/api/lab": {
+    "/api/v1/lab": {
       get: { summary: "List lab reports", responses: { "200": { description: "list" } } },
     },
-    "/api/lab/orders": {
+    "/api/v1/lab/orders": {
       post: { summary: "Order test", responses: { "201": { description: "ordered" } } },
     },
-    "/api/lab/{id}": {
+    "/api/v1/lab/{id}": {
       patch: { summary: "Advance stage", responses: { "200": { description: "updated" } } },
     },
-    "/api/billing": {
+    "/api/v1/billing": {
       get: { summary: "List invoices", responses: { "200": { description: "list" } } },
     },
-    "/api/billing/invoices": {
+    "/api/v1/billing/invoices": {
       post: { summary: "Create invoice", responses: { "201": { description: "created" } } },
     },
-    "/api/billing/{id}/collect": {
+    "/api/v1/billing/{id}/collect": {
       post: { summary: "Collect payment", responses: { "200": { description: "collected" } } },
     },
-    "/api/doctors": {
+    "/api/v1/doctors": {
       get: { summary: "List doctors", responses: { "200": { description: "list" } } },
     },
-    "/api/departments": {
+    "/api/v1/departments": {
       get: { summary: "List departments", responses: { "200": { description: "list" } } },
     },
-    "/api/inventory": {
+    "/api/v1/inventory": {
       get: { summary: "List inventory", responses: { "200": { description: "list" } } },
     },
-    "/api/inventory/{id}/restock": {
+    "/api/v1/inventory/{id}/restock": {
       post: { summary: "Restock item", responses: { "200": { description: "restocked" } } },
     },
-    "/api/staff": { get: { summary: "List staff", responses: { "200": { description: "list" } } } },
-    "/api/audit": {
+    "/api/v1/staff": {
+      get: { summary: "List staff", responses: { "200": { description: "list" } } },
+    },
+    "/api/v1/audit": {
       get: {
         summary: "List audit log (append-only)",
         responses: { "200": { description: "list" } },
       },
     },
-    "/api/dashboard/stats": {
+    "/api/v1/dashboard/stats": {
       get: { summary: "Dashboard aggregates", responses: { "200": { description: "stats" } } },
     },
   },

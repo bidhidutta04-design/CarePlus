@@ -15,7 +15,7 @@ describe("enterprise guarantees", () => {
     const token = await loginAs("Admin");
     // create an appointment for CP-1002 in the DB (not the seed file)
     const create = await request(createApp())
-      .post("/api/appointments")
+      .post("/api/v1/appointments")
       .set("Authorization", `Bearer ${token}`)
       .send({
         patientId: "CP-1002",
@@ -31,7 +31,7 @@ describe("enterprise guarantees", () => {
     const newId = create.body.data.id as string;
 
     const detail = await request(createApp())
-      .get("/api/patients/CP-1002")
+      .get("/api/v1/patients/CP-1002")
       .set("Authorization", `Bearer ${token}`);
     expect(detail.status).toBe(200);
     const visits = detail.body.data.visits as { id: string }[];
@@ -42,7 +42,7 @@ describe("enterprise guarantees", () => {
     const admin = await loginAs("Admin");
     // find a medicine with small stock in the seeded DB
     const list = await request(createApp())
-      .get("/api/pharmacy?search=Telma")
+      .get("/api/v1/pharmacy?search=Telma")
       .set("Authorization", `Bearer ${admin}`);
     const med = list.body.data[0] as { id: string; stockCount: number };
     const qty = med.stockCount; // each request alone would succeed, together they exceed
@@ -50,11 +50,11 @@ describe("enterprise guarantees", () => {
     const pharm = await loginAs("Pharmacist");
     const [r1, r2] = await Promise.all([
       request(createApp())
-        .post("/api/pharmacy/dispense")
+        .post("/api/v1/pharmacy/dispense")
         .set("Authorization", `Bearer ${pharm}`)
         .send({ medicineId: med.id, qty, patientId: "CP-1001" }),
       request(createApp())
-        .post("/api/pharmacy/dispense")
+        .post("/api/v1/pharmacy/dispense")
         .set("Authorization", `Bearer ${pharm}`)
         .send({ medicineId: med.id, qty, patientId: "CP-1001" }),
     ]);
@@ -62,7 +62,7 @@ describe("enterprise guarantees", () => {
     expect(statuses).toEqual([200, 409]);
 
     const after = await request(createApp())
-      .get("/api/pharmacy?search=Telma")
+      .get("/api/v1/pharmacy?search=Telma")
       .set("Authorization", `Bearer ${admin}`);
     expect((after.body.data[0] as { stockCount: number }).stockCount).toBe(0);
   });
@@ -82,7 +82,7 @@ describe("enterprise guarantees", () => {
     const results = await Promise.all(
       ["02:00 PM", "02:15 PM", "02:30 PM", "02:45 PM", "03:00 PM"].map((slot) =>
         request(createApp())
-          .post("/api/appointments")
+          .post("/api/v1/appointments")
           .set("Authorization", `Bearer ${token}`)
           .send(payload(slot)),
       ),
@@ -94,12 +94,12 @@ describe("enterprise guarantees", () => {
 
   it("refresh token reuse revokes the whole family", async () => {
     const loginRes = await request(createApp())
-      .post("/api/auth/login")
+      .post("/api/v1/auth/login")
       .send({ email: "admin@careplus.local", password: "Test@1234" });
     const firstRt = loginRes.body.data.refreshToken as string;
 
     const refresh1 = await request(createApp())
-      .post("/api/auth/refresh")
+      .post("/api/v1/auth/refresh")
       .send({ refreshToken: firstRt });
     expect(refresh1.status).toBe(200);
     const secondRt = refresh1.body.data.refreshToken as string;
@@ -107,13 +107,13 @@ describe("enterprise guarantees", () => {
 
     // replay the old (rotated) token → theft detected, family revoked
     const replay = await request(createApp())
-      .post("/api/auth/refresh")
+      .post("/api/v1/auth/refresh")
       .send({ refreshToken: firstRt });
     expect(replay.status).toBe(401);
 
     // the current token is dead too — whole family revoked
     const afterRevoke = await request(createApp())
-      .post("/api/auth/refresh")
+      .post("/api/v1/auth/refresh")
       .send({ refreshToken: secondRt });
     expect(afterRevoke.status).toBe(401);
   });

@@ -41,6 +41,6 @@ jobs:
           npm run build -w @careplus/backend
           node backend/dist/index.js &
           sleep 5
-          curl -s http://localhost:4000/api/openapi.json > /tmp/live.json
-          diff -u docs/openapi.snapshot.json /tmp/live.json || (echo "::error::OpenAPI snapshot out of date — run: curl -s http://localhost:4000/api/openapi.json > docs/openapi.snapshot.json and commit" && exit 1)
+          curl -s http://localhost:4000/api/v1/openapi.json > /tmp/live.json
+          diff -u docs/openapi.snapshot.json /tmp/live.json || (echo "::error::OpenAPI snapshot out of date — run: curl -s http://localhost:4000/api/v1/openapi.json > docs/openapi.snapshot.json and commit" && exit 1)
           kill %1 || true

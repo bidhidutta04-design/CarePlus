@@ -11,7 +11,7 @@ describe("appointment status machine", () => {
   it("creates an appointment and moves it through the legal path", async () => {
     const token = await adminToken();
     const create = await request(createApp())
-      .post("/api/appointments")
+      .post("/api/v1/appointments")
       .set("Authorization", `Bearer ${token}`)
       .send({
         patientId: "CP-1001",
@@ -27,20 +27,20 @@ describe("appointment status machine", () => {
     const id = create.body.data.id as string;
 
     const toTriage = await request(createApp())
-      .patch(`/api/appointments/${id}/status`)
+      .patch(`/api/v1/appointments/${id}/status`)
       .set("Authorization", `Bearer ${token}`)
       .send({ status: "In Triage" });
     expect(toTriage.status).toBe(200);
     expect(toTriage.body.data.status).toBe("In Triage");
 
     const toDoctor = await request(createApp())
-      .patch(`/api/appointments/${id}/status`)
+      .patch(`/api/v1/appointments/${id}/status`)
       .set("Authorization", `Bearer ${token}`)
       .send({ status: "With Doctor" });
     expect(toDoctor.status).toBe(200);
 
     const toDone = await request(createApp())
-      .patch(`/api/appointments/${id}/status`)
+      .patch(`/api/v1/appointments/${id}/status`)
       .set("Authorization", `Bearer ${token}`)
       .send({ status: "Completed" });
     expect(toDone.status).toBe(200);
@@ -50,7 +50,7 @@ describe("appointment status machine", () => {
   it("rejects illegal transition", async () => {
     const token = await adminToken();
     const create = await request(createApp())
-      .post("/api/appointments")
+      .post("/api/v1/appointments")
       .set("Authorization", `Bearer ${token}`)
       .send({
         patientId: "CP-1001",
@@ -65,7 +65,7 @@ describe("appointment status machine", () => {
     const id = create.body.data.id as string;
 
     const bad = await request(createApp())
-      .patch(`/api/appointments/${id}/status`)
+      .patch(`/api/v1/appointments/${id}/status`)
       .set("Authorization", `Bearer ${token}`)
       .send({ status: "Completed" });
     expect(bad.status).toBe(409);
@@ -74,7 +74,7 @@ describe("appointment status machine", () => {
   it("rejects transition on unknown appointment", async () => {
     const token = await adminToken();
     const res = await request(createApp())
-      .patch("/api/appointments/APT-9999/status")
+      .patch("/api/v1/appointments/APT-9999/status")
       .set("Authorization", `Bearer ${token}`)
       .send({ status: "In Triage" });
     expect(res.status).toBe(404);

@@ -11,7 +11,7 @@ const emailFor = (role: string): string => {
 
 export async function loginAs(role = "Admin"): Promise<string> {
   const res = await request(createApp())
-    .post("/api/auth/login")
+    .post("/api/v1/auth/login")
     .send({ email: emailFor(role), password: TEST_PASSWORD });
   expect(res.status).toBe(200);
   const token = res.body.data.token as string;
@@ -20,6 +20,6 @@ export async function loginAs(role = "Admin"): Promise<string> {
 }
 
 export async function loginRaw(body: unknown): Promise<{ status: number; body: unknown }> {
-  const res = await request(createApp()).post("/api/auth/login").send(body);
+  const res = await request(createApp()).post("/api/v1/auth/login").send(body);
   return { status: res.status, body: res.body };
 }
