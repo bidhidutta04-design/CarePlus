@@ -2,10 +2,10 @@ import crypto from "node:crypto";
 import mongoose from "mongoose";
 import { SessionModel } from "../models/Session.js";
 
-// In-memory fallback for when Mongo is not connected (dev without DB)
+// In-memory fallback for when Mongo is not connected (dev without DB).
+// Holds hashes only — never plaintext tokens.
 const memorySessions: Array<{
   refreshTokenHash: string;
-  refreshToken?: string;
   sub: string;
   name: string;
   role: string;
@@ -34,7 +34,6 @@ export async function createSession(data: {
   const refreshTokenHash = hashToken(data.refreshToken);
   const doc = {
     refreshTokenHash,
-    refreshToken: data.refreshToken,
     sub: data.sub,
     name: data.name,
     role: data.role,
@@ -62,14 +61,9 @@ export async function findSessionByToken(refreshToken: string): Promise<{
 } | null> {
   const hash = hashToken(refreshToken);
   if (!isDbReady()) {
-    return (
-      memorySessions.find((s) => s.refreshTokenHash === hash || s.refreshToken === refreshToken) ??
-      null
-    );
+    return memorySessions.find((s) => s.refreshTokenHash === hash) ?? null;
   }
-  const doc = await SessionModel.findOne({
-    $or: [{ refreshTokenHash: hash }, { refreshToken }],
-  }).lean();
+  const doc = await SessionModel.findOne({ refreshTokenHash: hash }).lean();
   return (doc as unknown as (typeof memorySessions)[number]) ?? null;
 }
 
@@ -88,7 +82,6 @@ export async function rotateSession(
     sess.isRevoked = true;
     memorySessions.push({
       refreshTokenHash: newHash,
-      refreshToken: newData.refreshToken,
       sub: sess.sub,
       name: sess.name,
       role: sess.role,
@@ -106,7 +99,6 @@ export async function rotateSession(
   if (!old) return newHash;
   await SessionModel.create({
     refreshTokenHash: newHash,
-    refreshToken: newData.refreshToken,
     sub: (old as unknown as (typeof memorySessions)[number]).sub,
     name: (old as unknown as (typeof memorySessions)[number]).name,
     role: (old as unknown as (typeof memorySessions)[number]).role,
@@ -120,13 +112,11 @@ export async function rotateSession(
 export async function deleteSession(refreshToken: string): Promise<void> {
   const hash = hashToken(refreshToken);
   if (!isDbReady()) {
-    const idx = memorySessions.findIndex(
-      (s) => s.refreshTokenHash === hash || s.refreshToken === refreshToken,
-    );
+    const idx = memorySessions.findIndex((s) => s.refreshTokenHash === hash);
     if (idx >= 0) memorySessions.splice(idx, 1);
     return;
   }
-  await SessionModel.deleteOne({ $or: [{ refreshTokenHash: hash }, { refreshToken }] });
+  await SessionModel.deleteOne({ refreshTokenHash: hash });
 }
 
 export async function revokeFamily(familyId: string): Promise<void> {

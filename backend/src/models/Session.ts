@@ -8,12 +8,6 @@ const sessionSchema = new Schema(
       unique: true,
       index: true,
     },
-    refreshToken: {
-      type: String,
-      required: false,
-      index: true,
-      sparse: true,
-    },
     sub: {
       type: String,
       required: true,
