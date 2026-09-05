@@ -2,18 +2,19 @@ import mongoose from "mongoose";
 import { MedicineModel } from "../models/Medicine.js";
 import { db } from "../store.js";
 import { ID_SPECS, nextId } from "./counterRepo.js";
+import { paginateArray, sanitizeSort, type Pagination } from "../paginate.js";
 
 function isDbReady(): boolean {
   return mongoose.connection.readyState === 1;
 }
 
-export async function listMedicines(filter: {
-  search?: string;
-  lowStock?: string;
-}): Promise<(typeof db.medicines)[number][]> {
+export async function listMedicines(
+  filter: { search?: string; lowStock?: string },
+  pagination?: Pagination,
+): Promise<{ data: (typeof db.medicines)[number][]; total: number }> {
   if (!isDbReady()) {
     const q = (filter.search ?? "").toLowerCase();
-    return db.medicines
+    const filtered = db.medicines
       .filter(
         (m) => !q || [m.brandName, m.genericName, m.batchNo].join(" ").toLowerCase().includes(q),
       )
@@ -22,6 +23,9 @@ export async function listMedicines(filter: {
           filter.lowStock !== "true" || m.stockCount < m.minThreshold || m.status === "Expired",
       )
       .sort((a, b) => a.expiryDate.localeCompare(b.expiryDate));
+    if (!pagination) return { data: filtered, total: filtered.length };
+    const { data } = paginateArray(filtered, pagination);
+    return { data, total: filtered.length };
   }
   const andClauses: Record<string, unknown>[] = [];
   if (filter.search) {
@@ -40,10 +44,16 @@ export async function listMedicines(filter: {
     });
   }
   const query = andClauses.length > 0 ? { $and: andClauses } : {};
-  const docs = (await MedicineModel.find(query)
-    .sort({ expiryDate: 1 })
-    .lean()) as unknown as (typeof db.medicines)[number][];
-  return docs;
+  const total = await MedicineModel.countDocuments(query);
+  let docsQuery = MedicineModel.find(query).lean();
+  const sortField = sanitizeSort(pagination?.sort) ?? "expiryDate";
+  const dir = pagination?.order === "desc" ? -1 : 1;
+  docsQuery = docsQuery.sort({ [sortField]: dir });
+  if (pagination) {
+    docsQuery = docsQuery.skip((pagination.page - 1) * pagination.limit).limit(pagination.limit);
+  }
+  const docs = await docsQuery;
+  return { data: docs as unknown as (typeof db.medicines)[number][], total };
 }
 
 export async function getMedicineById(id: string): Promise<(typeof db.medicines)[number] | null> {

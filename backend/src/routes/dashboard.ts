@@ -108,21 +108,24 @@ router.get(
       return;
     }
 
-    const [patients, appointments, beds, medicines, labs, invoices] = await Promise.all([
-      listPatients({}) as unknown as Promise<import("../store.js").Patient[]>,
-      listAppointments({}),
-      listBeds({}),
-      listMedicines({}),
-      listLabs({}),
-      listInvoices({}),
-    ]);
+    const [patientsRes, appointmentsRes, bedsRes, medicinesRes, labsRes, invoicesRes] =
+      await Promise.all([
+        listPatients({}),
+        listAppointments({}),
+        listBeds({}),
+        listMedicines({}),
+        listLabs({}),
+        listInvoices({}),
+      ]);
+    const patients = patientsRes.data;
+    const appointments = appointmentsRes.data;
+    const beds = bedsRes.data;
+    const medicines = medicinesRes.data;
+    const labs = labsRes.data;
+    const invoices = invoicesRes.data;
 
-    const admitted = (patients as unknown as { admissionStatus: string }[]).filter(
-      (p) => p.admissionStatus === "Admitted",
-    ).length;
-    const opd = (patients as unknown as { admissionStatus: string }[]).filter(
-      (p) => p.admissionStatus === "OPD",
-    ).length;
+    const admitted = patients.filter((p) => p.admissionStatus === "Admitted").length;
+    const opd = patients.filter((p) => p.admissionStatus === "OPD").length;
     const waiting = appointments.filter((a) => a.status === "Waiting").length;
     const inTriage = appointments.filter((a) => a.status === "In Triage").length;
     const withDoctor = appointments.filter((a) => a.status === "With Doctor").length;

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { auditLog, requireAuth, requireRole, validate } from "../middleware.js";
 import { listInventory, restockInventory } from "../repos/inventoryRepo.js";
 import { ApiError } from "../errors.js";
-import { paginateArray, parsePagination } from "../paginate.js";
+import { paginatedMeta, parsePagination } from "../paginate.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = Router();
@@ -16,9 +16,8 @@ router.get(
   asyncHandler(async (req, res) => {
     const { lowStock = "", category = "" } = req.query as Record<string, string>;
     const pagination = parsePagination(req.query as Record<string, string>);
-    const list = await listInventory({ lowStock, category });
-    const { data, meta } = paginateArray(list, pagination);
-    res.json({ data, meta });
+    const { data, total } = await listInventory({ lowStock, category }, pagination);
+    res.json({ data, meta: paginatedMeta(total, pagination) });
   }),
 );
 

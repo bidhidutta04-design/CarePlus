@@ -9,7 +9,7 @@ import {
   listInvoices,
 } from "../repos/invoiceRepo.js";
 import { getPatientById } from "../repos/patientRepo.js";
-import { paginateArray, parsePagination } from "../paginate.js";
+import { paginatedMeta, parsePagination } from "../paginate.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = Router();
@@ -40,13 +40,13 @@ router.get(
   asyncHandler(async (req, res) => {
     const { status = "", patientId = "" } = req.query as Record<string, string>;
     const pagination = parsePagination(req.query as Record<string, string>);
-    const list = await listInvoices({ status, patientId });
-    const billed = list.reduce((s, i) => s + i.totalAmount, 0);
-    const collected = list.reduce((s, i) => s + i.paidAmount, 0);
-    const { data, meta } = paginateArray(list, pagination);
+    const { data, total, billed, collected } = await listInvoices(
+      { status, patientId },
+      pagination,
+    );
     res.json({
       data,
-      meta: { ...meta, billed, collected, pending: billed - collected },
+      meta: { ...paginatedMeta(total, pagination), billed, collected, pending: billed - collected },
     });
   }),
 );

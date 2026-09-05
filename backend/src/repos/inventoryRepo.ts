@@ -1,32 +1,41 @@
 import mongoose from "mongoose";
 import { InventoryModel } from "../models/Inventory.js";
 import { db } from "../store.js";
+import { paginateArray, sanitizeSort, type Pagination } from "../paginate.js";
 
 function isDbReady(): boolean {
   return mongoose.connection.readyState === 1;
 }
 
-export async function listInventory(filter: {
-  lowStock?: string;
-  category?: string;
-}): Promise<(typeof db.inventory)[number][]> {
+export async function listInventory(
+  filter: { lowStock?: string; category?: string },
+  pagination?: Pagination,
+): Promise<{ data: (typeof db.inventory)[number][]; total: number }> {
   if (!isDbReady()) {
-    return db.inventory.filter(
+    const filtered = db.inventory.filter(
       (i) =>
         (!filter.category || i.category === filter.category) &&
         (filter.lowStock !== "true" || i.stock <= i.minThreshold),
     );
+    if (!pagination) return { data: filtered, total: filtered.length };
+    const { data } = paginateArray(filtered, pagination);
+    return { data, total: filtered.length };
   }
   const query: Record<string, unknown> = {};
   if (filter.category) query.category = filter.category;
-  if (filter.lowStock === "true") {
-    // fetch then filter to keep logic simple and FEFO-like
+  if (filter.lowStock === "true") query.$expr = { $lte: ["$stock", "$minThreshold"] };
+  const total = await InventoryModel.countDocuments(query);
+  let docsQuery = InventoryModel.find(query).lean();
+  const sortField = sanitizeSort(pagination?.sort);
+  if (sortField) {
+    const dir = pagination?.order === "desc" ? -1 : 1;
+    docsQuery = docsQuery.sort({ [sortField]: dir });
   }
-  let docs = (await InventoryModel.find(
-    query,
-  ).lean()) as unknown as (typeof db.inventory)[number][];
-  if (filter.lowStock === "true") docs = docs.filter((i) => i.stock <= i.minThreshold);
-  return docs;
+  if (pagination) {
+    docsQuery = docsQuery.skip((pagination.page - 1) * pagination.limit).limit(pagination.limit);
+  }
+  const docs = await docsQuery;
+  return { data: docs as unknown as (typeof db.inventory)[number][], total };
 }
 
 export async function restockInventory(

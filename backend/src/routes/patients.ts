@@ -4,7 +4,7 @@ import { ApiError } from "../errors.js";
 import { auditLog, requireAuth, requireRole, validate } from "../middleware.js";
 import { createPatient, getPatientById, listPatients } from "../repos/patientRepo.js";
 import { db } from "../store.js";
-import { paginateArray, parsePagination } from "../paginate.js";
+import { paginatedMeta, parsePagination } from "../paginate.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = Router();
@@ -35,9 +35,8 @@ router.get(
   asyncHandler(async (req, res) => {
     const { search = "", status = "", bloodGroup = "" } = req.query as Record<string, string>;
     const pagination = parsePagination(req.query as Record<string, string>);
-    const list = await listPatients({ search, status, bloodGroup });
-    const { data, meta } = paginateArray(list, pagination);
-    res.json({ data, meta });
+    const { data, total } = await listPatients({ search, status, bloodGroup }, pagination);
+    res.json({ data, meta: paginatedMeta(total, pagination) });
   }),
 );
 

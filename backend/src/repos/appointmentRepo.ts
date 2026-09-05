@@ -2,26 +2,28 @@ import mongoose from "mongoose";
 import { AppointmentModel } from "../models/Appointment.js";
 import { db } from "../store.js";
 import { ID_SPECS, nextId } from "./counterRepo.js";
+import { paginateArray, sanitizeSort, type Pagination } from "../paginate.js";
 
 function isDbReady(): boolean {
   return mongoose.connection.readyState === 1;
 }
 
-export async function listAppointments(filter: {
-  status?: string;
-  department?: string;
-  priority?: string;
-  search?: string;
-}): Promise<(typeof db.appointments)[number][]> {
+export async function listAppointments(
+  filter: { status?: string; department?: string; priority?: string; search?: string },
+  pagination?: Pagination,
+): Promise<{ data: (typeof db.appointments)[number][]; total: number }> {
   if (!isDbReady()) {
     const q = (filter.search ?? "").toLowerCase();
-    return db.appointments.filter(
+    const filtered = db.appointments.filter(
       (a) =>
         (!filter.status || a.status === filter.status) &&
         (!filter.department || a.department === filter.department) &&
         (!filter.priority || a.priority === filter.priority) &&
         (!q || [a.id, a.patientName, a.doctorName, a.tokenNo].join(" ").toLowerCase().includes(q)),
     );
+    if (!pagination) return { data: filtered, total: filtered.length };
+    const { data } = paginateArray(filtered, pagination);
+    return { data, total: filtered.length };
   }
   const query: Record<string, unknown> = {};
   if (filter.status) query.status = filter.status;
@@ -36,8 +38,18 @@ export async function listAppointments(filter: {
       { tokenNo: { $regex: s, $options: "i" } },
     ];
   }
-  const docs = await AppointmentModel.find(query).lean();
-  return docs as unknown as (typeof db.appointments)[number][];
+  const total = await AppointmentModel.countDocuments(query);
+  let docsQuery = AppointmentModel.find(query).lean();
+  const sortField = sanitizeSort(pagination?.sort);
+  if (sortField) {
+    const dir = pagination?.order === "desc" ? -1 : 1;
+    docsQuery = docsQuery.sort({ [sortField]: dir });
+  }
+  if (pagination) {
+    docsQuery = docsQuery.skip((pagination.page - 1) * pagination.limit).limit(pagination.limit);
+  }
+  const docs = await docsQuery;
+  return { data: docs as unknown as (typeof db.appointments)[number][], total };
 }
 
 export async function getAppointmentById(

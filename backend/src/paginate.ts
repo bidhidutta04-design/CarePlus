@@ -23,8 +23,8 @@ export function paginateArray<T>(
   const page = Math.min(pagination.page, pages);
   const start = (page - 1) * pagination.limit;
   let sorted = items;
-  if (pagination.sort) {
-    const field = pagination.sort;
+  const field = sanitizeSort(pagination.sort);
+  if (field) {
     const dir = pagination.order === "desc" ? -1 : 1;
     sorted = [...items].sort((a, b) => {
       const av = (a as Record<string, unknown>)[field];
@@ -32,11 +32,18 @@ export function paginateArray<T>(
       if (av === bv) return 0;
       if (av === undefined) return 1;
       if (bv === undefined) return -1;
+      if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
       return String(av).localeCompare(String(bv)) * dir;
     });
   }
   const data = sorted.slice(start, start + pagination.limit);
   return { data, meta: { total, page, pages, limit: pagination.limit } };
+}
+
+// Allow only plain field names — blocks $-operators / dotted paths in sort.
+export function sanitizeSort(field: string | undefined): string | undefined {
+  if (!field) return undefined;
+  return /^[A-Za-z][A-Za-z0-9_]*$/.test(field) ? field : undefined;
 }
 
 export function paginatedMeta(

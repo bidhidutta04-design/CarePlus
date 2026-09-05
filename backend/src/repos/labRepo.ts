@@ -2,27 +2,41 @@ import mongoose from "mongoose";
 import { LabModel } from "../models/LabReport.js";
 import { db } from "../store.js";
 import { ID_SPECS, nextId } from "./counterRepo.js";
+import { paginateArray, sanitizeSort, type Pagination } from "../paginate.js";
 
 function isDbReady(): boolean {
   return mongoose.connection.readyState === 1;
 }
 
-export async function listLabs(filter: {
-  status?: string;
-  patientId?: string;
-}): Promise<(typeof db.labs)[number][]> {
+export async function listLabs(
+  filter: { status?: string; patientId?: string },
+  pagination?: Pagination,
+): Promise<{ data: (typeof db.labs)[number][]; total: number }> {
   if (!isDbReady()) {
-    return db.labs.filter(
+    const filtered = db.labs.filter(
       (l) =>
         (!filter.status || l.status === filter.status) &&
         (!filter.patientId || l.patientId === filter.patientId),
     );
+    if (!pagination) return { data: filtered, total: filtered.length };
+    const { data } = paginateArray(filtered, pagination);
+    return { data, total: filtered.length };
   }
   const query: Record<string, unknown> = {};
   if (filter.status) query.status = filter.status;
   if (filter.patientId) query.patientId = filter.patientId;
-  const docs = await LabModel.find(query).lean();
-  return docs as unknown as (typeof db.labs)[number][];
+  const total = await LabModel.countDocuments(query);
+  let docsQuery = LabModel.find(query).lean();
+  const sortField = sanitizeSort(pagination?.sort);
+  if (sortField) {
+    const dir = pagination?.order === "desc" ? -1 : 1;
+    docsQuery = docsQuery.sort({ [sortField]: dir });
+  }
+  if (pagination) {
+    docsQuery = docsQuery.skip((pagination.page - 1) * pagination.limit).limit(pagination.limit);
+  }
+  const docs = await docsQuery;
+  return { data: docs as unknown as (typeof db.labs)[number][], total };
 }
 
 export async function getLabById(id: string): Promise<(typeof db.labs)[number] | null> {

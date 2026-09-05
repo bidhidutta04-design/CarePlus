@@ -2,24 +2,27 @@ import mongoose from "mongoose";
 import { PatientModel } from "../models/Patient.js";
 import { db } from "../store.js";
 import { ID_SPECS, nextId } from "./counterRepo.js";
+import { paginateArray, sanitizeSort, type Pagination } from "../paginate.js";
 
 function isDbReady(): boolean {
   return mongoose.connection.readyState === 1;
 }
 
-export async function listPatients(filter: {
-  search?: string;
-  status?: string;
-  bloodGroup?: string;
-}): Promise<(typeof db.patients)[number][]> {
+export async function listPatients(
+  filter: { search?: string; status?: string; bloodGroup?: string },
+  pagination?: Pagination,
+): Promise<{ data: (typeof db.patients)[number][]; total: number }> {
   if (!isDbReady()) {
     const q = (filter.search ?? "").toLowerCase();
-    return db.patients.filter(
+    const filtered = db.patients.filter(
       (p) =>
         (!filter.status || p.admissionStatus === filter.status) &&
         (!filter.bloodGroup || p.bloodGroup === filter.bloodGroup) &&
         (!q || [p.id, p.fullName, p.phone].join(" ").toLowerCase().includes(q)),
     );
+    if (!pagination) return { data: filtered, total: filtered.length };
+    const { data } = paginateArray(filtered, pagination);
+    return { data, total: filtered.length };
   }
   const query: Record<string, unknown> = {};
   if (filter.status) query.admissionStatus = filter.status;
@@ -32,8 +35,18 @@ export async function listPatients(filter: {
       { phone: { $regex: s, $options: "i" } },
     ];
   }
-  const docs = await PatientModel.find(query).lean();
-  return docs as unknown as (typeof db.patients)[number][];
+  const total = await PatientModel.countDocuments(query);
+  let docsQuery = PatientModel.find(query).lean();
+  const sortField = sanitizeSort(pagination?.sort);
+  if (sortField) {
+    const dir = pagination?.order === "desc" ? -1 : 1;
+    docsQuery = docsQuery.sort({ [sortField]: dir });
+  }
+  if (pagination) {
+    docsQuery = docsQuery.skip((pagination.page - 1) * pagination.limit).limit(pagination.limit);
+  }
+  const docs = await docsQuery;
+  return { data: docs as unknown as (typeof db.patients)[number][], total };
 }
 
 export async function getPatientById(id: string): Promise<(typeof db.patients)[number] | null> {

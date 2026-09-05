@@ -1,15 +1,27 @@
 import mongoose from "mongoose";
 import { AuditModel } from "../models/Audit.js";
 import { db } from "../store.js";
+import { paginateArray, type Pagination } from "../paginate.js";
 
 function isDbReady(): boolean {
   return mongoose.connection.readyState === 1;
 }
 
-export async function listAudits(): Promise<(typeof db.auditLogs)[number][]> {
-  if (!isDbReady()) return [...db.auditLogs];
-  const docs = await AuditModel.find().sort({ timestamp: -1 }).lean();
-  return docs as unknown as (typeof db.auditLogs)[number][];
+export async function listAudits(
+  pagination?: Pagination,
+): Promise<{ data: (typeof db.auditLogs)[number][]; total: number }> {
+  if (!isDbReady()) {
+    if (!pagination) return { data: [...db.auditLogs], total: db.auditLogs.length };
+    const { data } = paginateArray([...db.auditLogs], pagination);
+    return { data, total: db.auditLogs.length };
+  }
+  const total = await AuditModel.countDocuments({});
+  let docsQuery = AuditModel.find().sort({ timestamp: -1 }).lean();
+  if (pagination) {
+    docsQuery = docsQuery.skip((pagination.page - 1) * pagination.limit).limit(pagination.limit);
+  }
+  const docs = await docsQuery;
+  return { data: docs as unknown as (typeof db.auditLogs)[number][], total };
 }
 
 export async function createAudit(

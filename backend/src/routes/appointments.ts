@@ -9,7 +9,7 @@ import {
   updateAppointmentStatus,
 } from "../repos/appointmentRepo.js";
 import { getPatientById } from "../repos/patientRepo.js";
-import { paginateArray, parsePagination } from "../paginate.js";
+import { paginatedMeta, parsePagination } from "../paginate.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = Router();
@@ -58,9 +58,11 @@ router.get(
       search = "",
     } = req.query as Record<string, string>;
     const pagination = parsePagination(req.query as Record<string, string>);
-    const list = await listAppointments({ status, department, priority, search });
-    const { data, meta } = paginateArray(list, pagination);
-    res.json({ data, meta });
+    const { data, total } = await listAppointments(
+      { status, department, priority, search },
+      pagination,
+    );
+    res.json({ data, meta: paginatedMeta(total, pagination) });
   }),
 );
 

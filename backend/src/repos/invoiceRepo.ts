@@ -2,27 +2,58 @@ import mongoose from "mongoose";
 import { InvoiceModel } from "../models/Invoice.js";
 import { db } from "../store.js";
 import { ID_SPECS, nextId } from "./counterRepo.js";
+import { paginateArray, sanitizeSort, type Pagination } from "../paginate.js";
 
 function isDbReady(): boolean {
   return mongoose.connection.readyState === 1;
 }
 
-export async function listInvoices(filter: {
-  status?: string;
-  patientId?: string;
-}): Promise<(typeof db.invoices)[number][]> {
+export async function listInvoices(
+  filter: { status?: string; patientId?: string },
+  pagination?: Pagination,
+): Promise<{
+  data: (typeof db.invoices)[number][];
+  total: number;
+  billed: number;
+  collected: number;
+}> {
   if (!isDbReady()) {
-    return db.invoices.filter(
+    const filtered = db.invoices.filter(
       (i) =>
         (!filter.status || i.status === filter.status) &&
         (!filter.patientId || i.patientId === filter.patientId),
     );
+    const billed = filtered.reduce((s, i) => s + i.totalAmount, 0);
+    const collected = filtered.reduce((s, i) => s + i.paidAmount, 0);
+    if (!pagination) return { data: filtered, total: filtered.length, billed, collected };
+    const { data } = paginateArray(filtered, pagination);
+    return { data, total: filtered.length, billed, collected };
   }
   const query: Record<string, unknown> = {};
   if (filter.status) query.status = filter.status;
   if (filter.patientId) query.patientId = filter.patientId;
-  const docs = await InvoiceModel.find(query).lean();
-  return docs as unknown as (typeof db.invoices)[number][];
+  const [total, sums] = await Promise.all([
+    InvoiceModel.countDocuments(query),
+    InvoiceModel.aggregate([
+      { $match: query },
+      {
+        $group: { _id: null, billed: { $sum: "$totalAmount" }, collected: { $sum: "$paidAmount" } },
+      },
+    ]),
+  ]);
+  const billed = (sums[0] as { billed: number } | undefined)?.billed ?? 0;
+  const collected = (sums[0] as { collected: number } | undefined)?.collected ?? 0;
+  let docsQuery = InvoiceModel.find(query).lean();
+  const sortField = sanitizeSort(pagination?.sort);
+  if (sortField) {
+    const dir = pagination?.order === "desc" ? -1 : 1;
+    docsQuery = docsQuery.sort({ [sortField]: dir });
+  }
+  if (pagination) {
+    docsQuery = docsQuery.skip((pagination.page - 1) * pagination.limit).limit(pagination.limit);
+  }
+  const docs = await docsQuery;
+  return { data: docs as unknown as (typeof db.invoices)[number][], total, billed, collected };
 }
 
 export async function getInvoiceById(id: string): Promise<(typeof db.invoices)[number] | null> {

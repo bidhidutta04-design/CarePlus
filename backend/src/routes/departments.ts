@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware.js";
 import { listDepartments } from "../repos/departmentRepo.js";
-import { paginateArray, parsePagination } from "../paginate.js";
+import { paginatedMeta, parsePagination } from "../paginate.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = Router();
@@ -12,9 +12,8 @@ router.get(
   "/",
   asyncHandler(async (req, res) => {
     const pagination = parsePagination(req.query as Record<string, string>);
-    const list = await listDepartments();
-    const { data, meta } = paginateArray(list, pagination);
-    res.json({ data, meta });
+    const { data, total } = await listDepartments(pagination);
+    res.json({ data, meta: paginatedMeta(total, pagination) });
   }),
 );
 

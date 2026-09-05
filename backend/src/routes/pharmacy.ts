@@ -9,7 +9,7 @@ import {
   listMedicines,
 } from "../repos/medicineRepo.js";
 import { getPatientById } from "../repos/patientRepo.js";
-import { paginateArray, parsePagination } from "../paginate.js";
+import { paginatedMeta, parsePagination } from "../paginate.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = Router();
@@ -39,9 +39,8 @@ router.get(
   asyncHandler(async (req, res) => {
     const { search = "", lowStock = "" } = req.query as Record<string, string>;
     const pagination = parsePagination(req.query as Record<string, string>);
-    const list = await listMedicines({ search, lowStock });
-    const { data, meta } = paginateArray(list, pagination);
-    res.json({ data, meta });
+    const { data, total } = await listMedicines({ search, lowStock }, pagination);
+    res.json({ data, meta: paginatedMeta(total, pagination) });
   }),
 );
 

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { ApiError } from "../errors.js";
 import { auditLog, requireAuth, requireRole, validate } from "../middleware.js";
 import { getBedById, listBeds, updateBed } from "../repos/bedRepo.js";
-import { paginateArray, parsePagination } from "../paginate.js";
+import { paginatedMeta, parsePagination } from "../paginate.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = Router();
@@ -22,13 +22,10 @@ router.get(
   asyncHandler(async (req, res) => {
     const { ward = "", status = "" } = req.query as Record<string, string>;
     const pagination = parsePagination(req.query as Record<string, string>);
-    const list = await listBeds({ ward, status });
-    const occupied = list.filter((b) => b.status === "Occupied").length;
-    const occupancyPct = list.length ? Math.round((occupied / list.length) * 100) : 0;
-    const { data, meta } = paginateArray(list, pagination);
+    const { data, total, occupied, occupancyPct } = await listBeds({ ward, status }, pagination);
     res.json({
       data,
-      meta: { ...meta, occupied, occupancyPct },
+      meta: { ...paginatedMeta(total, pagination), occupied, occupancyPct },
     });
   }),
 );
