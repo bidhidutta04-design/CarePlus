@@ -5,11 +5,12 @@ import { logger } from "./logger.js";
 
 async function main(): Promise<void> {
   if (process.env.NODE_ENV !== "test") {
-    try {
-      await connectDB();
-    } catch {
+    // Never block listen() on the database — boot fast, report via /ready.
+    // (Previously awaited here: with an unreachable DB the 5s driver timeout
+    // delayed listen and broke health-gated CI steps with curl exit 7.)
+    connectDB().catch(() => {
       logger.warn("api starting without db — set MONGODB_URI and restart for persistence");
-    }
+    });
   }
 
   const app = createApp();

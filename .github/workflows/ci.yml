@@ -7,6 +7,18 @@ on:
 jobs:
   checks:
     runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      MONGODB_URI: mongodb://localhost:27017/careplus
     steps:
       - uses: actions/checkout@v4
 
@@ -39,8 +51,12 @@ jobs:
       - name: Contract check
         run: |
           npm run build -w @careplus/backend
-          node backend/dist/index.js &
-          sleep 5
-          curl -s http://localhost:4000/api/v1/openapi.json > /tmp/live.json
-          diff -u docs/openapi.snapshot.json /tmp/live.json || (echo "::error::OpenAPI snapshot out of date — run: curl -s http://localhost:4000/api/v1/openapi.json > docs/openapi.snapshot.json and commit" && exit 1)
-          kill %1 || true
+          node backend/dist/index.js > /tmp/api.log 2>&1 &
+          API_PID=$!
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:4000/api/v1/openapi.json -o /tmp/live.json && break
+            sleep 2
+          done
+          test -f /tmp/live.json || (echo "::error::API did not start — see /tmp/api.log" && cat /tmp/api.log && kill $API_PID && exit 1)
+          diff -u docs/openapi.snapshot.json /tmp/live.json || (echo "::error::OpenAPI snapshot out of date — run: curl -s http://localhost:4000/api/v1/openapi.json > docs/openapi.snapshot.json and commit" && kill $API_PID && exit 1)
+          kill $API_PID || true
