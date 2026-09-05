@@ -38,9 +38,9 @@ export default function ReportsPage() {
         actions={<Button size="sm" variant="outline" onClick={exportCSV}><Download className="mr-1.5 h-4 w-4" />Export invoices CSV</Button>}
       />
       <div className="grid gap-4 sm:grid-cols-3">
-        <KpiCard icon={TrendingUp} label="FY monthly avg" value={formatINR(4700000)} sub="Apr–Sep trend" tone="green" />
-        <KpiCard icon={BedDouble} label="Bed occupancy" value={`${occupancy}%`} sub="Turnover 4.1 days avg stay" tone="blue" />
-        <KpiCard icon={Repeat} label="Completed consults" value={String(completed)} sub="This week in queue" tone="amber" />
+        <KpiCard icon={TrendingUp} label="FY monthly avg" value={formatINR(4700000)} rawValue={4700000} formatValue={(n) => formatINR(Math.round(n))} sub="Apr–Sep trend" tone="green" />
+        <KpiCard icon={BedDouble} label="Bed occupancy" value={`${occupancy}%`} rawValue={occupancy} formatValue={(n) => `${Math.round(n)}%`} sub="Turnover 4.1 days avg stay" tone="blue" />
+        <KpiCard icon={Repeat} label="Completed consults" value={String(completed)} rawValue={completed} formatValue={(n) => String(Math.round(n))} sub="This week in queue" tone="amber" />
       </div>
       <Card className="mt-4 rounded-2xl shadow-card">
         <CardHeader><CardTitle>Monthly revenue (₹L)</CardTitle></CardHeader>

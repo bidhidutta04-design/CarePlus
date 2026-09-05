@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { KpiCard } from "@/components/shared/KpiCard";
+import { AnimatedNumber } from "@/components/shared/AnimatedNumber";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useAppSelector } from "@/store/hooks";
@@ -28,6 +29,8 @@ export default function DashboardPage() {
   const maxOPD = Math.max(...hourlyOPD.map((h) => h.count));
   const circ = 2 * Math.PI * 44;
 
+  const opdCount = activeQueue.length + 3;
+
   return (
     <div>
       <PageHeader title="Executive Dashboard" subtitle="Hospital operations at a glance — Thursday, 04 Sep 2026" />
@@ -42,9 +45,38 @@ export default function DashboardPage() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard icon={CalendarCheck} label="Today's OPD Consultations" value={String(activeQueue.length + 3)} sub={`${activeQueue.length} in live queue`} tone="blue" />
-        <KpiCard icon={BedDouble} label="Inpatients / Outpatients" value={`${inpatients} / ${outpatients}`} sub={`${patients.length} registered patients`} tone="amber" />
-        <KpiCard icon={Wallet} label="Today's Revenue" value={formatINR(todayRevenue)} sub="Cash 38% • UPI 34% • Card 28%" tone="green" />
+        <KpiCard
+          icon={CalendarCheck}
+          label="Today's OPD Consultations"
+          value={String(opdCount)}
+          rawValue={opdCount}
+          formatValue={(n) => String(Math.round(n))}
+          sub={`${activeQueue.length} in live queue`}
+          tone="blue"
+        />
+        <KpiCard
+          icon={BedDouble}
+          label="Inpatients / Outpatients"
+          value={`${inpatients} / ${outpatients}`}
+          rawValue={inpatients + outpatients}
+          formatValue={(n) => {
+            const total = Math.round(n);
+            const inP = Math.round((inpatients / (inpatients + outpatients || 1)) * total);
+            const outP = total - inP;
+            return `${inP} / ${outP}`;
+          }}
+          sub={`${patients.length} registered patients`}
+          tone="amber"
+        />
+        <KpiCard
+          icon={Wallet}
+          label="Today's Revenue"
+          value={formatINR(todayRevenue)}
+          rawValue={todayRevenue}
+          formatValue={(n) => formatINR(Math.round(n))}
+          sub="Cash 38% • UPI 34% • Card 28%"
+          tone="green"
+        />
         <Card className="rounded-2xl shadow-card">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Bed Occupancy</CardTitle></CardHeader>
           <CardContent className="flex items-center gap-4">
@@ -52,10 +84,14 @@ export default function DashboardPage() {
               <circle cx="50" cy="50" r="44" fill="none" stroke="#e9eef4" strokeWidth="10" />
               <circle cx="50" cy="50" r="44" fill="none" stroke="#1d6f9c" strokeWidth="10" strokeLinecap="round"
                 strokeDasharray={circ} strokeDashoffset={circ - (circ * occupancy) / 100} transform="rotate(-90 50 50)" />
-              <text x="50" y="55" textAnchor="middle" fontSize="18" fontWeight="700" fill="#0b2b4a">{occupancy}%</text>
+              <text x="50" y="55" textAnchor="middle" fontSize="18" fontWeight="700" fill="#0b2b4a">
+                <AnimatedNumber value={occupancy} format={(n) => `${Math.round(n)}%`} />
+              </text>
             </svg>
             <div className="text-sm">
-              <p className="font-bold text-[#0b2b4a] dark:text-foreground">{occupied}/{beds.length} beds</p>
+              <p className="font-bold text-[#0b2b4a] dark:text-foreground">
+                <AnimatedNumber value={occupied} format={(n) => String(Math.round(n))} />/<AnimatedNumber value={beds.length} format={(n) => String(Math.round(n))} /> beds
+              </p>
               <p className="text-muted-foreground">ICU, Emergency, Wards & Suites</p>
               <Link href="/departments/beds" className="text-clinical hover:underline">Open bed board →</Link>
             </div>
@@ -89,7 +125,9 @@ export default function DashboardPage() {
                 <div className="h-2 flex-1 rounded-full bg-[#e9eef4]">
                   <div className="h-2 rounded-full bg-clinical" style={{ width: `${d.pct}%` }} />
                 </div>
-                <span className="w-11 text-right text-sm font-semibold text-[#0b2b4a] dark:text-foreground">{d.pct}%</span>
+                <span className="w-11 text-right text-sm font-semibold text-[#0b2b4a] dark:text-foreground">
+                  <AnimatedNumber value={d.pct} format={(n) => `${Math.round(n)}%`} duration={600} />
+                </span>
               </div>
             ))}
           </CardContent>

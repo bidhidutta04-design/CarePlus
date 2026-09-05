@@ -80,9 +80,9 @@ export default function PharmacyPage() {
         }
       />
       <div className="grid gap-4 sm:grid-cols-3">
-        <KpiCard icon={Pill} label="SKUs tracked" value={String(medicines.length)} sub="FEFO batch control" tone="blue" />
-        <KpiCard icon={TriangleAlert} label="Low stock / expired" value={`${low} / ${exp}`} sub="Reorder flagged SKUs" tone="red" />
-        <KpiCard icon={CalendarClock} label="Expiring < 60 days" value={String(soon)} sub="Dispense first" tone="amber" />
+        <KpiCard icon={Pill} label="SKUs tracked" value={String(medicines.length)} rawValue={medicines.length} formatValue={(n) => String(Math.round(n))} sub="FEFO batch control" tone="blue" />
+        <KpiCard icon={TriangleAlert} label="Low stock / expired" value={`${low} / ${exp}`} rawValue={low + exp} formatValue={(n) => { const total = Math.round(n); const l = Math.round((low / (low + exp || 1)) * total); return `${l} / ${total - l}`; }} sub="Reorder flagged SKUs" tone="red" />
+        <KpiCard icon={CalendarClock} label="Expiring < 60 days" value={String(soon)} rawValue={soon} formatValue={(n) => String(Math.round(n))} sub="Dispense first" tone="amber" />
       </div>
       <Card className="mt-4 rounded-2xl shadow-card">
         <CardHeader className="flex flex-row items-center justify-between">

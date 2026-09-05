@@ -39,10 +39,10 @@ export default function BillingPage() {
         actions={<Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="mr-1.5 h-4 w-4" />Create invoice</Button>}
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard icon={Wallet} label="Total billed" value={formatINR(billed)} sub={`${invoices.length} invoices`} tone="blue" />
-        <KpiCard icon={HandCoins} label="Collected" value={formatINR(collected)} sub="Cash + Card + UPI + TPA" tone="green" />
-        <KpiCard icon={Hourglass} label="Pending balances" value={formatINR(pending)} sub="Follow-up queue" tone="amber" />
-        <KpiCard icon={ShieldCheck} label="TPA claims in progress" value={String(tpa)} sub="Star Health, HDFC Ergo" tone="red" />
+        <KpiCard icon={Wallet} label="Total billed" value={formatINR(billed)} rawValue={billed} formatValue={(n) => formatINR(Math.round(n))} sub={`${invoices.length} invoices`} tone="blue" />
+        <KpiCard icon={HandCoins} label="Collected" value={formatINR(collected)} rawValue={collected} formatValue={(n) => formatINR(Math.round(n))} sub="Cash + Card + UPI + TPA" tone="green" />
+        <KpiCard icon={Hourglass} label="Pending balances" value={formatINR(pending)} rawValue={pending} formatValue={(n) => formatINR(Math.round(n))} sub="Follow-up queue" tone="amber" />
+        <KpiCard icon={ShieldCheck} label="TPA claims in progress" value={String(tpa)} rawValue={tpa} formatValue={(n) => String(Math.round(n))} sub="Star Health, HDFC Ergo" tone="red" />
       </div>
       <Card className="mt-4 rounded-2xl shadow-card">
         <CardHeader className="flex flex-row items-center justify-between">

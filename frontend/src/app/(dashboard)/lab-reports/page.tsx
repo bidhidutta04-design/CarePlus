@@ -59,9 +59,9 @@ export default function LabPage() {
         actions={<Button size="sm" onClick={() => setOrderOpen(true)}>Order test</Button>}
       />
       <div className="grid gap-4 sm:grid-cols-3">
-        <KpiCard icon={FlaskConical} label="Total orders" value={String(labs.length)} sub="All pipelines" tone="blue" />
-        <KpiCard icon={Clock} label="Pending" value={String(labs.filter((l) => l.status !== "Report Approved").length)} sub="Needs action" tone="amber" />
-        <KpiCard icon={CheckCircle2} label="Approved" value={String(labs.filter((l) => l.status === "Report Approved").length)} sub="Signed reports" tone="green" />
+        <KpiCard icon={FlaskConical} label="Total orders" value={String(labs.length)} rawValue={labs.length} formatValue={(n) => String(Math.round(n))} sub="All pipelines" tone="blue" />
+        <KpiCard icon={Clock} label="Pending" value={String(labs.filter((l) => l.status !== "Report Approved").length)} rawValue={labs.filter((l) => l.status !== "Report Approved").length} formatValue={(n) => String(Math.round(n))} sub="Needs action" tone="amber" />
+        <KpiCard icon={CheckCircle2} label="Approved" value={String(labs.filter((l) => l.status === "Report Approved").length)} rawValue={labs.filter((l) => l.status === "Report Approved").length} formatValue={(n) => String(Math.round(n))} sub="Signed reports" tone="green" />
       </div>
       <div className="mt-4 grid gap-4 xl:grid-cols-4 md:grid-cols-2">
         {STAGES.map((stage) => (

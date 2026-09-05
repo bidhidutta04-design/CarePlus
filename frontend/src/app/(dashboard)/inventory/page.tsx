@@ -16,9 +16,9 @@ export default function InventoryPage() {
     <div>
       <PageHeader title="Inventory — Consumables & Equipment" subtitle="Safety-threshold ledger with restock log" />
       <div className="grid gap-4 sm:grid-cols-3">
-        <KpiCard icon={Boxes} label="SKUs" value={String(seedInventory.length)} sub="Consumables, surgical, linen, radiology" tone="blue" />
-        <KpiCard icon={TriangleAlert} label="Below threshold" value={String(low.length)} sub={low.map((l) => l.name).slice(0, 2).join(", ") || "All healthy"} tone="red" />
-        <KpiCard icon={IndianRupee} label="Stock value" value={`₹${(value / 100000).toFixed(2)}L`} sub="At unit cost" tone="green" />
+        <KpiCard icon={Boxes} label="SKUs" value={String(seedInventory.length)} rawValue={seedInventory.length} formatValue={(n) => String(Math.round(n))} sub="Consumables, surgical, linen, radiology" tone="blue" />
+        <KpiCard icon={TriangleAlert} label="Below threshold" value={String(low.length)} rawValue={low.length} formatValue={(n) => String(Math.round(n))} sub={low.map((l) => l.name).slice(0, 2).join(", ") || "All healthy"} tone="red" />
+        <KpiCard icon={IndianRupee} label="Stock value" value={`₹${(value / 100000).toFixed(2)}L`} rawValue={value / 100000} formatValue={(n) => `₹${n.toFixed(2)}L`} sub="At unit cost" tone="green" />
       </div>
       <Card className="mt-4 rounded-2xl shadow-card">
         <CardHeader><CardTitle>Supplies ledger</CardTitle></CardHeader>

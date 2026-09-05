@@ -1,19 +1,26 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AnimatedNumber } from "@/components/shared/AnimatedNumber";
 
 export function KpiCard({
   icon: Icon,
   label,
   value,
+  rawValue,
+  formatValue,
   sub,
   tone = "blue",
+  animateDuration,
 }: {
   icon: LucideIcon;
   label: string;
   value: string;
+  rawValue?: number;
+  formatValue?: (n: number) => string;
   sub?: string;
   tone?: "blue" | "green" | "amber" | "red";
+  animateDuration?: number;
 }) {
   const tones: Record<string, string> = {
     blue: "bg-[#e3f0f9] text-[#11507a]",
@@ -30,7 +37,17 @@ export function KpiCard({
         </span>
       </CardHeader>
       <CardContent>
-        <p className="text-3xl font-bold tracking-tight text-[#0b2b4a] dark:text-foreground">{value}</p>
+        <p className="text-3xl font-bold tracking-tight text-[#0b2b4a] dark:text-foreground">
+          {rawValue !== undefined && formatValue ? (
+            <AnimatedNumber
+              value={rawValue}
+              format={formatValue}
+              duration={animateDuration}
+            />
+          ) : (
+            value
+          )}
+        </p>
         {sub ? <p className="mt-1 text-xs text-muted-foreground">{sub}</p> : null}
       </CardContent>
     </Card>
