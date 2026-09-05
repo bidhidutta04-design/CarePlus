@@ -10,6 +10,7 @@ export interface Doctor {
   id: string;
   name: string;
   qualification: string;
+  specialization?: string;
   department: string;
   roomNo: string;
   fee: number;

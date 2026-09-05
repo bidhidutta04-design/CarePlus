@@ -21,6 +21,10 @@ const doctorSchema = new Schema(
       required: true,
       index: true,
     },
+    specialization: {
+      type: String,
+      required: false,
+    },
     roomNo: {
       type: String,
       required: true,

@@ -441,6 +441,7 @@ export interface Doctor {
   id: string;
   name: string;
   qualification: string;
+  specialization?: string;
   department: string;
   roomNo: string;
   fee: number;
@@ -464,6 +465,7 @@ const doctors: Doctor[] = [
     id: "DOC-101",
     name: "Dr. Amit Verma",
     qualification: "MD Cardiology",
+    specialization: "Cardiologist",
     department: "Cardiology",
     roomNo: "C-101",
     fee: 1200,
@@ -474,6 +476,7 @@ const doctors: Doctor[] = [
     id: "DOC-102",
     name: "Dr. Neha Kapoor",
     qualification: "MS Obstetrics",
+    specialization: "Gynecologist",
     department: "Gynecology",
     roomNo: "G-204",
     fee: 900,
@@ -484,6 +487,7 @@ const doctors: Doctor[] = [
     id: "DOC-103",
     name: "Dr. Rajesh Kumar",
     qualification: "MS Orthopedics",
+    specialization: "Orthopedic Surgeon",
     department: "Orthopedics",
     roomNo: "O-103",
     fee: 800,
@@ -494,6 +498,7 @@ const doctors: Doctor[] = [
     id: "DOC-104",
     name: "Dr. Pooja Sharma",
     qualification: "MD Pediatrics",
+    specialization: "Pediatrician",
     department: "Pediatrics",
     roomNo: "P-301",
     fee: 700,
@@ -508,6 +513,7 @@ const doctors: Doctor[] = [
     id: "DOC-105",
     name: "Dr. Sandeep Jain",
     qualification: "MD General Medicine",
+    specialization: "General Physician",
     department: "General Medicine",
     roomNo: "M-105",
     fee: 600,
