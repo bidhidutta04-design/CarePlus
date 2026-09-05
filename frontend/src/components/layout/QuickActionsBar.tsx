@@ -35,7 +35,7 @@ export function QuickActionsBar() {
               key={a.key}
               variant="outline"
               size="sm"
-              className="shrink-0 rounded-full bg-white shadow-sm dark:bg-card"
+              className="shrink-0 rounded-full bg-white shadow-sm transition-all duration-200 hover:shadow-md hover:bg-[#f0f7ff] hover:-translate-y-px active:scale-[0.98] active:translate-y-0 dark:bg-card dark:hover:bg-accent/20"
               onClick={() => setModal(a.key)}
             >
               <a.icon className="mr-1.5 h-3.5 w-3.5 text-clinical" />
