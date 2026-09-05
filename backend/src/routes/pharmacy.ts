@@ -83,6 +83,11 @@ router.post(
       return;
     }
     const updated = await dispenseMedicine(medicineId, qty);
+    if (!updated) {
+      // Lost a concurrent race after the pre-check — atomic guard refused
+      next(ApiError.conflict("Insufficient stock"));
+      return;
+    }
     const charge = med.unitPrice * qty;
     res.json({ data: { medicine: updated, dispensedQty: qty, charge, patientId } });
   }),

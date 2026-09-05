@@ -53,7 +53,11 @@ async function main(): Promise<void> {
   await upsertAll(DepartmentModel, db.departments, "departments");
   await upsertAll(InventoryModel, db.inventory, "inventory");
   await upsertAll(StaffModel, db.staff, "staff");
-  await upsertAll(AuditModel, db.auditLogs, "audit logs");
+  await upsertAll(
+    AuditModel,
+    db.auditLogs.map((a) => ({ ...a, timestamp: new Date(a.timestamp) })),
+    "audit logs",
+  );
 
   await syncCounter(
     ID_SPECS.patient,

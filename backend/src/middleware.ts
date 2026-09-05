@@ -199,7 +199,7 @@ export function auditLog(req: Request, _res: Response, next: NextFunction): void
       const action = `${req.method} ${req.path}`;
       void createAudit({
         id: `AUD-${Date.now()}`,
-        timestamp: new Date().toISOString().replace("T", " ").slice(0, 19),
+        timestamp: new Date(),
         user: req.user?.name ?? "unknown",
         role: req.user?.role ?? "unknown",
         action,

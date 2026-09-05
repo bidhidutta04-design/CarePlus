@@ -9,8 +9,9 @@ const auditSchema = new Schema(
       index: true,
     },
     timestamp: {
-      type: String,
+      type: Date,
       required: true,
+      index: true,
     },
     user: {
       type: String,

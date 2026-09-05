@@ -23,26 +23,26 @@ export async function listMedicines(filter: {
       )
       .sort((a, b) => a.expiryDate.localeCompare(b.expiryDate));
   }
-  const query: Record<string, unknown> = {};
+  const andClauses: Record<string, unknown>[] = [];
   if (filter.search) {
     const s = filter.search;
-    query.$or = [
-      { brandName: { $regex: s, $options: "i" } },
-      { genericName: { $regex: s, $options: "i" } },
-      { batchNo: { $regex: s, $options: "i" } },
-    ];
+    andClauses.push({
+      $or: [
+        { brandName: { $regex: s, $options: "i" } },
+        { genericName: { $regex: s, $options: "i" } },
+        { batchNo: { $regex: s, $options: "i" } },
+      ],
+    });
   }
   if (filter.lowStock === "true") {
-    query.$or = query.$or
-      ? [{ $and: [query, { $expr: { $lt: ["$stockCount", "$minThreshold"] } }] }]
-      : undefined;
-    // Simpler: fetch and filter; keep FEFO sort in DB
+    andClauses.push({
+      $or: [{ $expr: { $lt: ["$stockCount", "$minThreshold"] } }, { status: "Expired" }],
+    });
   }
-  let docs = (await MedicineModel.find(query).lean()) as unknown as (typeof db.medicines)[number][];
-  if (filter.lowStock === "true") {
-    docs = docs.filter((m) => m.stockCount < m.minThreshold || m.status === "Expired");
-  }
-  docs.sort((a, b) => a.expiryDate.localeCompare(b.expiryDate));
+  const query = andClauses.length > 0 ? { $and: andClauses } : {};
+  const docs = (await MedicineModel.find(query)
+    .sort({ expiryDate: 1 })
+    .lean()) as unknown as (typeof db.medicines)[number][];
   return docs;
 }
 
@@ -93,11 +93,16 @@ export async function dispenseMedicine(
     if (med.stockCount < med.minThreshold) med.status = "Low Stock";
     return med;
   }
-  const med = await MedicineModel.findOne({ id });
+  // Atomic conditional decrement — concurrent dispenses can never oversell
+  const med = await MedicineModel.findOneAndUpdate(
+    { id, stockCount: { $gte: qty } },
+    { $inc: { stockCount: -qty } },
+    { new: true },
+  );
   if (!med) return null;
-  med.stockCount -= qty;
-  if (med.stockCount < (med.minThreshold as unknown as number))
+  if (med.stockCount < (med.minThreshold as unknown as number)) {
     med.status = "Low Stock" as unknown as typeof med.status;
-  await med.save();
+    await med.save();
+  }
   return med.toObject() as unknown as (typeof db.medicines)[number];
 }

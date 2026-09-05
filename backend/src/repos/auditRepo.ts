@@ -12,9 +12,11 @@ export async function listAudits(): Promise<(typeof db.auditLogs)[number][]> {
   return docs as unknown as (typeof db.auditLogs)[number][];
 }
 
-export async function createAudit(entry: (typeof db.auditLogs)[number]): Promise<void> {
+export async function createAudit(
+  entry: Omit<(typeof db.auditLogs)[number], "timestamp"> & { timestamp: Date },
+): Promise<void> {
   if (!isDbReady()) {
-    db.auditLogs.unshift(entry);
+    db.auditLogs.unshift({ ...entry, timestamp: entry.timestamp.toISOString() });
     return;
   }
   await AuditModel.create(entry);
