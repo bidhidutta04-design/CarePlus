@@ -32,16 +32,23 @@ export const openApiSpec = {
     "/health": {
       get: { summary: "Liveness", responses: { "200": { description: "ok" } }, security: [] },
     },
+    "/ready": {
+      get: {
+        summary: "Readiness (200 connected, 503 degraded)",
+        responses: { "200": { description: "ready" } },
+        security: [],
+      },
+    },
     "/api/auth/login": {
       post: {
-        summary: "Workstation login",
+        summary: "Credential login (email + password)",
         requestBody: {
           required: true,
           content: {
             "application/json": {
               schema: {
                 type: "object",
-                properties: { role: { type: "string" }, name: { type: "string" } },
+                properties: { email: { type: "string" }, password: { type: "string" } },
               },
             },
           },

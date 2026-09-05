@@ -1,4 +1,5 @@
 import express from "express";
+import mongoose from "mongoose";
 import compression from "compression";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -32,8 +33,21 @@ export function createApp(): express.Express {
   app.use(requestId);
   app.use(morgan(config.isProd ? "combined" : "dev"));
 
+  // Liveness — process is alive (orchestrator restart probe)
   app.get("/health", (_req, res) => {
     res.json({ data: { status: "ok", service: "careplus-api", time: new Date().toISOString() } });
+  });
+
+  // Readiness — ready to serve traffic (orchestrator routing probe)
+  app.get("/ready", (_req, res) => {
+    const dbUp = mongoose.connection.readyState === 1;
+    res.status(dbUp ? 200 : 503).json({
+      data: {
+        status: dbUp ? "ok" : "degraded",
+        db: dbUp ? "connected" : "disconnected",
+        time: new Date().toISOString(),
+      },
+    });
   });
 
   app.use("/docs", docsRoutes);

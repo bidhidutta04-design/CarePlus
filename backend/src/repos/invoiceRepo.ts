@@ -3,6 +3,7 @@ import { InvoiceModel } from "../models/Invoice.js";
 import { db } from "../store.js";
 import { ID_SPECS, nextId } from "./counterRepo.js";
 import { paginateArray, sanitizeSort, type Pagination } from "../paginate.js";
+import { billTotals } from "../utils/money.js";
 
 function isDbReady(): boolean {
   return mongoose.connection.readyState === 1;
@@ -97,6 +98,37 @@ export async function createInvoice(data: {
   return created.toObject() as unknown as (typeof db.invoices)[number];
 }
 
+export async function findOpenInvoice(
+  patientId: string,
+): Promise<(typeof db.invoices)[number] | null> {
+  if (!isDbReady()) {
+    return db.invoices.find((i) => i.patientId === patientId && i.status === "Unpaid") ?? null;
+  }
+  const doc = await InvoiceModel.findOne({ patientId, status: "Unpaid" }).sort({ date: -1 }).lean();
+  return (doc as unknown as (typeof db.invoices)[number]) ?? null;
+}
+
+export async function appendInvoiceItem(
+  id: string,
+  item: (typeof db.invoices)[number]["items"][number],
+): Promise<(typeof db.invoices)[number] | null> {
+  const inv = await getInvoiceById(id);
+  if (!inv || inv.status === "Paid") return null;
+  const items = [...inv.items, item];
+  const totals = billTotals(items, inv.discount);
+  const balanceDue = totals.totalAmount - inv.paidAmount;
+  if (!isDbReady()) {
+    Object.assign(inv, { items, ...totals, balanceDue });
+    return inv;
+  }
+  const doc = await InvoiceModel.findOneAndUpdate(
+    { id },
+    { items, ...totals, balanceDue },
+    { new: true },
+  ).lean();
+  return (doc as unknown as (typeof db.invoices)[number]) ?? null;
+}
+
 export async function collectInvoice(
   id: string,
   amount: number,
@@ -109,11 +141,18 @@ export async function collectInvoice(
     inv.status = inv.balanceDue === 0 ? "Paid" : "Partial";
     return inv;
   }
-  const inv = await InvoiceModel.findOne({ id });
+  // Atomic guarded increment — concurrent collects can never overshoot
+  const inv = await InvoiceModel.findOneAndUpdate(
+    { id, balanceDue: { $gte: amount } },
+    { $inc: { paidAmount: amount, balanceDue: -amount } },
+    { new: true },
+  ).lean();
   if (!inv) return null;
-  inv.paidAmount += amount;
-  inv.balanceDue = inv.totalAmount - inv.paidAmount;
-  inv.status = inv.balanceDue === 0 ? "Paid" : "Partial";
-  await inv.save();
-  return inv.toObject() as unknown as (typeof db.invoices)[number];
+  const obj = inv as unknown as (typeof db.invoices)[number];
+  const status = obj.balanceDue === 0 ? "Paid" : ("Partial" as const);
+  if (obj.status !== status) {
+    const updated = await InvoiceModel.findOneAndUpdate({ id }, { status }, { new: true }).lean();
+    return (updated as unknown as (typeof db.invoices)[number]) ?? obj;
+  }
+  return obj;
 }

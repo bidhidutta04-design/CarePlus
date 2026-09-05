@@ -58,6 +58,7 @@ describe("pharmacy and lab guards", () => {
       .set("Authorization", `Bearer ${admin}`);
     const stockAfter = after.body.data[0].stockCount as number;
     expect(stockAfter).toBe(stockBefore - 1);
+    expect(dispense.body.data.billId).toBeTruthy();
   });
 
   it("lab stage cannot regress", async () => {

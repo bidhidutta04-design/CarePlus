@@ -26,11 +26,14 @@ async function main(): Promise<void> {
 
   process.on("SIGINT", () => void shutdown());
   process.on("SIGTERM", () => void shutdown());
+  // Fail fast — a process with indeterminate state must restart clean, not limp on
   process.on("unhandledRejection", (reason) => {
-    console.error("unhandledRejection", reason);
+    console.error("unhandledRejection — exiting", reason);
+    void disconnectDB().finally(() => process.exit(1));
   });
   process.on("uncaughtException", (err) => {
-    console.error("uncaughtException", err);
+    console.error("uncaughtException — exiting", err);
+    void disconnectDB().finally(() => process.exit(1));
   });
 }
 

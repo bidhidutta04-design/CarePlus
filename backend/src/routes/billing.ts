@@ -11,6 +11,7 @@ import {
 import { getPatientById } from "../repos/patientRepo.js";
 import { paginatedMeta, parsePagination } from "../paginate.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { billTotals } from "../utils/money.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -22,13 +23,18 @@ const itemSchema = z.object({
   amount: z.number().positive(),
 });
 
-const createSchema = z.object({
-  patientId: z.string().min(1),
-  items: z.array(itemSchema).min(1),
-  discount: z.number().min(0).default(0),
-  paymentMethod: z.enum(["Cash", "Card", "UPI", "TPA Insurance"]),
-  tpaProvider: z.string().max(80).optional(),
-});
+const createSchema = z
+  .object({
+    patientId: z.string().min(1),
+    items: z.array(itemSchema).min(1),
+    discount: z.number().min(0).default(0),
+    paymentMethod: z.enum(["Cash", "Card", "UPI", "TPA Insurance"]),
+    tpaProvider: z.string().max(80).optional(),
+  })
+  .refine((v) => v.discount <= v.items.reduce((s, i) => s + i.amount, 0), {
+    message: "Discount cannot exceed subtotal",
+    path: ["discount"],
+  });
 
 const collectSchema = z.object({
   amount: z.number().positive(),
@@ -63,15 +69,13 @@ router.post(
       next(ApiError.notFound("Patient"));
       return;
     }
-    const subtotal = body.items.reduce((s, i) => s + i.amount, 0);
-    const tax = Math.round((subtotal - body.discount) * 0.05);
-    const totalAmount = subtotal - body.discount + tax;
+    const { subtotal, discount, tax, totalAmount } = billTotals(body.items, body.discount);
     const inv = await createInvoice({
       patientId: body.patientId,
       patientName: patient.fullName,
       items: body.items,
       subtotal,
-      discount: body.discount,
+      discount,
       tax,
       totalAmount,
       paymentMethod: body.paymentMethod,

@@ -52,9 +52,20 @@
         "security": []
       }
     },
+    "/ready": {
+      "get": {
+        "summary": "Readiness (200 connected, 503 degraded)",
+        "responses": {
+          "200": {
+            "description": "ready"
+          }
+        },
+        "security": []
+      }
+    },
     "/api/auth/login": {
       "post": {
-        "summary": "Workstation login",
+        "summary": "Credential login (email + password)",
         "requestBody": {
           "required": true,
           "content": {

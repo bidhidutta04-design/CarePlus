@@ -9,7 +9,13 @@ function isDbReady(): boolean {
 }
 
 export async function listAppointments(
-  filter: { status?: string; department?: string; priority?: string; search?: string },
+  filter: {
+    status?: string;
+    department?: string;
+    priority?: string;
+    search?: string;
+    patientId?: string;
+  },
   pagination?: Pagination,
 ): Promise<{ data: (typeof db.appointments)[number][]; total: number }> {
   if (!isDbReady()) {
@@ -19,6 +25,7 @@ export async function listAppointments(
         (!filter.status || a.status === filter.status) &&
         (!filter.department || a.department === filter.department) &&
         (!filter.priority || a.priority === filter.priority) &&
+        (!filter.patientId || a.patientId === filter.patientId) &&
         (!q || [a.id, a.patientName, a.doctorName, a.tokenNo].join(" ").toLowerCase().includes(q)),
     );
     if (!pagination) return { data: filtered, total: filtered.length };
@@ -29,6 +36,7 @@ export async function listAppointments(
   if (filter.status) query.status = filter.status;
   if (filter.department) query.department = filter.department;
   if (filter.priority) query.priority = filter.priority;
+  if (filter.patientId) query.patientId = filter.patientId;
   if (filter.search) {
     const s = filter.search;
     query.$or = [

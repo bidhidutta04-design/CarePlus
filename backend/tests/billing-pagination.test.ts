@@ -37,6 +37,20 @@ describe("billing and pagination", () => {
     expect(ok.body.data.balanceDue).toBe(total - 100);
   });
 
+  it("rejects discount larger than subtotal", async () => {
+    const token = await adminToken();
+    const res = await request(createApp())
+      .post("/api/billing/invoices")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        patientId: "CP-1001",
+        items: [{ desc: "Consult", dept: "OPD", amount: 1000 }],
+        discount: 5000,
+        paymentMethod: "Cash",
+      });
+    expect(res.status).toBe(400);
+  });
+
   it("paginates patient lists and supports sorting", async () => {
     const token = await adminToken();
     const p1 = await request(createApp())

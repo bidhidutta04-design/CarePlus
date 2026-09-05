@@ -3,7 +3,9 @@ import { z } from "zod";
 import { ApiError } from "../errors.js";
 import { auditLog, requireAuth, requireRole, validate } from "../middleware.js";
 import { createPatient, getPatientById, listPatients } from "../repos/patientRepo.js";
-import { db } from "../store.js";
+import { listAppointments } from "../repos/appointmentRepo.js";
+import { listLabs } from "../repos/labRepo.js";
+import { listInvoices } from "../repos/invoiceRepo.js";
 import { paginatedMeta, parsePagination } from "../paginate.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
@@ -49,9 +51,11 @@ router.get(
       next(ApiError.notFound("Patient"));
       return;
     }
-    const visits = db.appointments.filter((a) => a.patientId === p.id);
-    const labOrders = db.labs.filter((l) => l.patientId === p.id);
-    const bills = db.invoices.filter((i) => i.patientId === p.id);
+    const [visits, labOrders, bills] = await Promise.all([
+      listAppointments({ patientId: p.id }).then((r) => r.data),
+      listLabs({ patientId: p.id }).then((r) => r.data),
+      listInvoices({ patientId: p.id }).then((r) => r.data),
+    ]);
     res.json({ data: { ...p, visits, labOrders, bills } });
   }),
 );

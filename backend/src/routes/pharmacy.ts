@@ -9,8 +9,10 @@ import {
   listMedicines,
 } from "../repos/medicineRepo.js";
 import { getPatientById } from "../repos/patientRepo.js";
+import { appendInvoiceItem, createInvoice, findOpenInvoice } from "../repos/invoiceRepo.js";
 import { paginatedMeta, parsePagination } from "../paginate.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { billTotals } from "../utils/money.js";
 
 const router = Router();
 router.use(requireAuth);
@@ -88,7 +90,25 @@ router.post(
       return;
     }
     const charge = med.unitPrice * qty;
-    res.json({ data: { medicine: updated, dispensedQty: qty, charge, patientId } });
+    // Post charge to billing: append to patient's open bill, else open a new one
+    const lineItem = {
+      desc: `${med.brandName} x${qty}`,
+      dept: "Pharmacy" as const,
+      amount: charge,
+    };
+    const openBill = await findOpenInvoice(patientId);
+    const bill = openBill
+      ? await appendInvoiceItem(openBill.id, lineItem)
+      : await createInvoice({
+          patientId,
+          patientName: patient.fullName,
+          items: [lineItem],
+          ...billTotals([lineItem], 0),
+          paymentMethod: "Cash",
+        });
+    res.json({
+      data: { medicine: updated, dispensedQty: qty, charge, patientId, billId: bill?.id ?? null },
+    });
   }),
 );
 
