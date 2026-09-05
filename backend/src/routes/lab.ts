@@ -27,11 +27,16 @@ const resultSchema = z.object({
   isAbnormal: z.boolean().default(false),
 });
 
-const resultsSchema = z.object({
-  status: z.enum(STAGES),
-  results: z.array(resultSchema).min(1),
-  pathologistSign: z.string().max(80).default(""),
-});
+const resultsSchema = z
+  .object({
+    status: z.enum(STAGES),
+    results: z.array(resultSchema).default([]),
+    pathologistSign: z.string().max(80).default(""),
+  })
+  .refine((v) => v.status !== "Report Approved" || v.results.length > 0, {
+    message: "results required for Report Approved",
+    path: ["results"],
+  });
 
 // GET /api/lab?status=&patientId=&page=&limit=
 router.get(

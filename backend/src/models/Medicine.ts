@@ -27,8 +27,9 @@ const medicineSchema = new Schema(
       index: true,
     },
     expiryDate: {
-      type: String,
+      type: Date,
       required: true,
+      index: true,
     },
     unitPrice: {
       type: Number,
@@ -51,5 +52,16 @@ const medicineSchema = new Schema(
   },
   {},
 );
+
+// Auto-expire on save — status can never stay Healthy past its date
+medicineSchema.pre("save", function () {
+  const doc = this as unknown as { expiryDate: Date; status: string };
+  if (
+    doc.expiryDate &&
+    new Date(doc.expiryDate) < new Date(new Date().toISOString().slice(0, 10))
+  ) {
+    doc.status = "Expired";
+  }
+});
 
 export const MedicineModel = mongoose.model("Medicine", medicineSchema);

@@ -29,6 +29,18 @@ async function ensureCounter(spec: IdSpec): Promise<void> {
   initialized.add(spec.key);
 }
 
+// Raw atomic sequence for custom keys (e.g. daily token counters).
+export async function nextSequence(key: string, start = 0): Promise<number> {
+  if (!isDbReady()) throw new Error("Counter requires database connection");
+  await CounterModel.updateOne({ _id: key }, { $setOnInsert: { seq: start } }, { upsert: true });
+  const doc = await CounterModel.findOneAndUpdate(
+    { _id: key },
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true },
+  ).lean();
+  return (doc as unknown as { seq: number }).seq;
+}
+
 // Atomic auto-increment — safe under concurrency (single findOneAndUpdate).
 export async function nextId(spec: IdSpec): Promise<string> {
   if (!isDbReady()) throw new Error("Counter requires database connection");

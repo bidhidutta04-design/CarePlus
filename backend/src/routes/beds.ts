@@ -46,6 +46,10 @@ router.patch(
       next(ApiError.badRequest("patientName required to occupy a bed"));
       return;
     }
+    if (status === "Occupied" && !patientId && !bed.patientId) {
+      next(ApiError.badRequest("patientId required to occupy a bed"));
+      return;
+    }
     const updated = await updateBed(req.params.id, {
       status,
       patientId: patientId ?? bed.patientId,

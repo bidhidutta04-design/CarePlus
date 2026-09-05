@@ -112,4 +112,12 @@ describe("billing and pagination", () => {
       .set("Authorization", `Bearer ${token}`);
     expect(after.body.meta.total).toBeGreaterThan(totalBefore);
   });
+
+  it("audit log rejects non-admin roles", async () => {
+    const nurse = await loginAs("Nurse");
+    const res = await request(createApp())
+      .get("/api/audit")
+      .set("Authorization", `Bearer ${nurse}`);
+    expect(res.status).toBe(403);
+  });
 });

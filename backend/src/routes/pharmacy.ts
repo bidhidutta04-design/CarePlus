@@ -23,7 +23,12 @@ const batchSchema = z.object({
   genericName: z.string().min(2).max(80),
   category: z.string().min(2).max(40),
   batchNo: z.string().min(2).max(30),
-  expiryDate: z.string().min(1),
+  expiryDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "expiryDate must be YYYY-MM-DD")
+    .refine((v) => !Number.isNaN(new Date(`${v}T00:00:00Z`).getTime()), {
+      message: "expiryDate must be a real calendar date",
+    }),
   unitPrice: z.number().positive(),
   stockCount: z.number().int().min(1),
   minThreshold: z.number().int().min(1),
@@ -70,7 +75,10 @@ router.post(
       next(ApiError.notFound("Medicine"));
       return;
     }
-    if (med.status === "Expired") {
+    // Block by actual date too — status alone can lag behind the calendar
+    const today = new Date().toISOString().slice(0, 10);
+    const expiredByDate = new Date(med.expiryDate as unknown as string | Date) < new Date(today);
+    if (med.status === "Expired" || expiredByDate) {
       next(ApiError.conflict("Cannot dispense an expired batch"));
       return;
     }

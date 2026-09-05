@@ -1,6 +1,6 @@
 import { AppointmentModel } from "../models/Appointment.js";
 import { db } from "../store.js";
-import { ID_SPECS, nextId } from "./counterRepo.js";
+import { ID_SPECS, nextId, nextSequence } from "./counterRepo.js";
 import { paginateArray, sanitizeSort, type Pagination } from "../paginate.js";
 import { isDbReady } from "../db.js";
 
@@ -87,10 +87,12 @@ export async function createAppointment(data: {
     return appt;
   }
   const id = await nextId(ID_SPECS.appointment);
-  const seq = Number(id.replace("APT-", ""));
+  // Daily token counter — resets each day, no magic offset, no gaps from reseeds
+  const today = new Date().toISOString().slice(0, 10);
+  const tokenSeq = await nextSequence(`token:${today}`);
   const payload = {
     id,
-    tokenNo: `OPD-${String(seq - 1255 + 1).padStart(2, "0")}`,
+    tokenNo: `OPD-${String(tokenSeq).padStart(2, "0")}`,
     status: "Waiting" as const,
     ...data,
   };
