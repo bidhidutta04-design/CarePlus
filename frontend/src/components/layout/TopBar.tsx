@@ -274,7 +274,12 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
               <Settings className="mr-2 h-4 w-4" />
               Settings
             </DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive" onSelect={() => router.push("/login")}>
+            <DropdownMenuItem className="text-destructive" onSelect={() => {
+              localStorage.removeItem("careplus_token");
+              localStorage.removeItem("careplus_refresh_token");
+              document.cookie = "careplus_token=; path=/; max-age=0";
+              router.push("/login");
+            }}>
               <LogOut className="mr-2 h-4 w-4" />
               Sign out
             </DropdownMenuItem>
