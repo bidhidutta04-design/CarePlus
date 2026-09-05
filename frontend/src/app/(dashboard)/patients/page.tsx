@@ -18,36 +18,37 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { AddPatientModal } from "@/components/clinical/AddPatientModal";
-import { useAppSelector } from "@/store/hooks";
-import type { Patient } from "@/types/patient";
+import { usePatients } from "@/hooks/usePatients";
+import type { ApiPatient } from "@/hooks/usePatients";
 import { UserPlus } from "lucide-react";
 
-const col = createColumnHelper<Patient>();
+const col = createColumnHelper<ApiPatient>();
 
 export default function PatientsPage() {
-  const patients = useAppSelector((s) => s.clinical.patients);
-  const labs = useAppSelector((s) => s.ops.labs);
-  const [sorting, setSorting] = useState<SortingState>([]);
   const [query, setQuery] = useState("");
   const [blood, setBlood] = useState("All");
   const [gender, setGender] = useState("All");
   const [admit, setAdmit] = useState("All");
   const [addOpen, setAddOpen] = useState(false);
   const [drawerId, setDrawerId] = useState<string | null>(null);
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const { data, isLoading } = usePatients({
+    search: query || undefined,
+    status: admit !== "All" ? admit : undefined,
+    bloodGroup: blood !== "All" ? blood : undefined,
+  });
+  const patients = data?.data ?? [];
+
+  const filtered = useMemo(() => {
+    return patients.filter(
+      (p) =>
+        (gender === "All" || p.gender === gender) &&
+        (query === "" || [p.id, p.fullName, p.phone].join(" ").toLowerCase().includes(query.toLowerCase()))
+    );
+  }, [patients, gender, query]);
 
   const drawerPatient = patients.find((p) => p.id === drawerId) ?? null;
-
-  const filtered = useMemo(
-    () =>
-      patients.filter(
-        (p) =>
-          (blood === "All" || p.bloodGroup === blood) &&
-          (gender === "All" || p.gender === gender) &&
-          (admit === "All" || p.admissionStatus === admit) &&
-          (query === "" || [p.id, p.fullName, p.phone].join(" ").toLowerCase().includes(query.toLowerCase()))
-      ),
-    [patients, blood, gender, admit, query]
-  );
 
   const columns = useMemo(
     () => [
@@ -86,7 +87,7 @@ export default function PatientsPage() {
     <div>
       <PageHeader
         title="Master Patient Index"
-        subtitle={`${filtered.length} of ${patients.length} patients`}
+        subtitle={isLoading ? "Loading patients…" : `${filtered.length} of ${patients.length} patients`}
         actions={<Button size="sm" onClick={() => setAddOpen(true)}><UserPlus className="mr-1.5 h-4 w-4" />Add patient</Button>}
       />
       <Card className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
@@ -107,31 +108,34 @@ export default function PatientsPage() {
           </div>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((hg) => (
-                <TableRow key={hg.id}>
-                  {hg.headers.map((h) => (
-                    <TableHead key={h.id} onClick={h.column.getToggleSortingHandler()} className="cursor-pointer select-none whitespace-nowrap">
-                      {flexRender(h.column.columnDef.header, h.getContext())}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.map((r) => (
-                <TableRow key={r.id}>
-                  {r.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="whitespace-nowrap">{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
-                  ))}
-                </TableRow>
-              ))}
-              {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No patients found.</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
+          {isLoading && <p className="py-8 text-center text-sm text-muted-foreground">Loading patients…</p>}
+          {!isLoading && (
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((hg) => (
+                  <TableRow key={hg.id}>
+                    {hg.headers.map((h) => (
+                      <TableHead key={h.id} onClick={h.column.getToggleSortingHandler()} className="cursor-pointer select-none whitespace-nowrap">
+                        {flexRender(h.column.columnDef.header, h.getContext())}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.map((r) => (
+                  <TableRow key={r.id}>
+                    {r.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className="whitespace-nowrap">{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+                {filtered.length === 0 && (
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No patients found.</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
@@ -155,32 +159,6 @@ export default function PatientsPage() {
                   <p className="text-muted-foreground">
                     Allergies: {drawerPatient.allergies.join(", ") || "None recorded"} • Chronic: {drawerPatient.chronicConditions.join(", ") || "None"}
                   </p>
-                </div>
-                <div>
-                  <h4 className="mb-1 font-semibold">Vitals trend</h4>
-                  {drawerPatient.vitalsHistory.length === 0 && <p className="text-muted-foreground">No vitals recorded.</p>}
-                  <ul className="grid gap-1">
-                    {drawerPatient.vitalsHistory.map((v, i) => (
-                      <li key={i} className="flex justify-between rounded-lg bg-muted/60 px-3 py-1.5">
-                        <span>{v.date}</span>
-                        <span>BP {v.bp} • P {v.pulse} • SpO2 {v.spo2}% • {v.temp}°F</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="mb-1 font-semibold">Lab reports</h4>
-                  <ul className="grid gap-1">
-                    {labs.filter((l) => l.patientId === drawerPatient.id).map((l) => (
-                      <li key={l.id} className="flex items-center justify-between rounded-lg bg-muted/60 px-3 py-1.5">
-                        <span>{l.testName} <span className="text-muted-foreground">({l.id})</span></span>
-                        <StatusBadge status={l.status} />
-                      </li>
-                    ))}
-                    {labs.filter((l) => l.patientId === drawerPatient.id).length === 0 && (
-                      <li className="text-muted-foreground">No lab orders.</li>
-                    )}
-                  </ul>
                 </div>
                 <Button asChild><Link href={`/patients/${drawerPatient.id}`}>Open full EMR</Link></Button>
               </div>

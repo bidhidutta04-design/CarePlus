@@ -6,8 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { addPatient } from "@/store/clinicalSlice";
+import { useCreatePatient } from "@/hooks/usePatients";
 
 const schema = z.object({
   fullName: z.string().min(2, "Enter full name"),
@@ -25,21 +24,17 @@ const schema = z.object({
 type Form = z.infer<typeof schema>;
 
 export function AddPatientModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const dispatch = useAppDispatch();
-  const patients = useAppSelector((s) => s.clinical.patients);
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<Form>({
+  const createPatient = useCreatePatient();
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<Form>({
     resolver: zodResolver(schema),
     defaultValues: { gender: "Male", bloodGroup: "O+", email: "" },
   });
 
-  const onSubmit = (v: Form): void => {
-    const n = 1001 + patients.length + 1;
-    dispatch(
-      addPatient({
-        id: `CP-${n}`,
+  const onSubmit = async (v: Form): Promise<void> => {
+    try {
+      await createPatient.mutateAsync({
         fullName: v.fullName,
         age: v.age,
-        dob: "",
         gender: v.gender,
         phone: v.phone,
         email: v.email,
@@ -49,12 +44,12 @@ export function AddPatientModal({ open, onClose }: { open: boolean; onClose: () 
         chronicConditions: [],
         emergencyContact: { name: v.emergencyName, phone: v.emergencyPhone, relation: "Family" },
         admissionStatus: "OPD",
-        vitalsHistory: [],
-        registeredDate: "2026-09-04",
-      })
-    );
-    reset();
-    onClose();
+      });
+      reset();
+      onClose();
+    } catch {
+      // error handled by hook
+    }
   };
 
   const field = "grid gap-1 text-sm";
@@ -83,8 +78,8 @@ export function AddPatientModal({ open, onClose }: { open: boolean; onClose: () 
           <label className={field}>Emergency contact<Input {...register("emergencyName")} />{errors.emergencyName && <span className="text-xs text-red-600">{errors.emergencyName.message}</span>}</label>
           <label className={field}>Emergency phone<Input {...register("emergencyPhone")} />{errors.emergencyPhone && <span className="text-xs text-red-600">{errors.emergencyPhone.message}</span>}</label>
           <DialogFooter className="col-span-2">
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit">Register</Button>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
+            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Registering…" : "Register"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
