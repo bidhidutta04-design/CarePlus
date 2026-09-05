@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/apiClient";
 import type { Doctor } from "@/types/doctor";
 
@@ -18,6 +18,19 @@ export function useDoctors(filters?: { department?: string; availability?: strin
       if (filters?.availability) params.availability = filters.availability;
       const { data } = await apiClient.get<DoctorsResponse>("/doctors", { params });
       return data;
+    },
+  });
+}
+
+export function useCreateDoctor() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: Omit<Doctor, "id">) => {
+      const { data } = await apiClient.post<{ data: Doctor }>("/doctors", payload);
+      return data.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["doctors"] });
     },
   });
 }

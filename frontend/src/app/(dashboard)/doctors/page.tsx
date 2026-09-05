@@ -8,9 +8,10 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { useAppSelector } from "@/store/hooks";
 import { useDoctors } from "@/hooks/useDoctors";
 import { formatINR } from "@/lib/utils";
-import { UserRound } from "lucide-react";
+import { UserRound, Plus } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination } from "swiper/modules";
+import { AddDoctorModal } from "@/components/clinical/AddDoctorModal";
 import "swiper/css";
 import "swiper/css/pagination";
 
@@ -18,6 +19,7 @@ export default function DoctorsPage() {
   const appointments = useAppSelector((s) => s.clinical.appointments);
   const [dept, setDept] = useState("All");
   const [selected, setSelected] = useState<string | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const { data, isLoading } = useDoctors();
   const doctors = data?.data ?? [];
@@ -33,9 +35,15 @@ export default function DoctorsPage() {
         title="Doctors & Clinical Desks"
         subtitle={isLoading ? "Loading doctors…" : `${doctors.length} specialists • swipe or filter`}
         actions={
-          <select value={dept} onChange={(e) => setDept(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm" aria-label="Filter department">
-            {depts.map((d) => <option key={d}>{d}</option>)}
-          </select>
+          <>
+            <select value={dept} onChange={(e) => setDept(e.target.value)} className="rounded-lg border border-input bg-background px-3 py-2 text-sm" aria-label="Filter department">
+              {depts.map((d) => <option key={d}>{d}</option>)}
+            </select>
+            <Button size="sm" onClick={() => setShowAddModal(true)}>
+              <Plus className="mr-1 h-4 w-4" />
+              Add Doctor
+            </Button>
+          </>
         }
       />
 
@@ -106,6 +114,8 @@ export default function DoctorsPage() {
           </CardContent>
         </Card>
       )}
+
+      <AddDoctorModal open={showAddModal} onClose={() => setShowAddModal(false)} />
     </div>
   );
 }

@@ -14,6 +14,7 @@ export const ID_SPECS: Record<string, IdSpec> = {
   invoice: { key: "invoice", prefix: "INV-2025-", pad: 3, start: 0 },
   medicine: { key: "medicine", prefix: "MED-", pad: 3, start: 0 },
   lab: { key: "lab", prefix: "LAB-", pad: 4, start: 2001 },
+  doctor: { key: "doctor", prefix: "DOC-", pad: 3, start: 100 },
 };
 
 const initialized = new Set<string>();
