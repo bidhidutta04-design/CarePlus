@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { PatientModel } from "../models/Patient.js";
 import { db } from "../store.js";
+import { ID_SPECS, nextId } from "./counterRepo.js";
 
 function isDbReady(): boolean {
   return mongoose.connection.readyState === 1;
@@ -55,8 +56,7 @@ export async function createPatient(
     db.patients.unshift(patient);
     return patient;
   }
-  const count = await PatientModel.countDocuments();
-  const id = data.id ?? `CP-${1001 + count + 1}`;
+  const id = data.id ?? (await nextId(ID_SPECS.patient));
   const registeredDate = data.registeredDate ?? new Date().toISOString().slice(0, 10);
   const payload = { ...data, id, registeredDate };
   const created = await PatientModel.create(payload as Record<string, unknown>);

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import request from "supertest";
 import { createApp } from "../src/app.js";
+import { loginAs } from "./helpers.js";
 
 async function tokenFor(role: string): Promise<string> {
-  const res = await request(createApp()).post("/api/auth/login").send({ role, name: "Tester" });
-  return res.body.data.token as string;
+  return loginAs(role);
 }
 
 describe("pharmacy and lab guards", () => {

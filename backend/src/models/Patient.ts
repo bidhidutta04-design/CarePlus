@@ -74,7 +74,7 @@ const patientSchema = new Schema(
       required: true,
     },
   },
-  { _id: false, versionKey: false, id: false },
+  {},
 );
 
 patientSchema.index({ fullName: "text", phone: "text", id: "text" });

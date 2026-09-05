@@ -74,7 +74,7 @@ const labSchema = new Schema(
       default: "",
     },
   },
-  { _id: false, versionKey: false, id: false },
+  {},
 );
 
 export const LabModel = mongoose.model("LabReport", labSchema);

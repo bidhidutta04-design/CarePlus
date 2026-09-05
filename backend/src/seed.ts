@@ -11,6 +11,9 @@ import { DepartmentModel } from "./models/Department.js";
 import { InventoryModel } from "./models/Inventory.js";
 import { StaffModel } from "./models/Staff.js";
 import { AuditModel } from "./models/Audit.js";
+import { UserModel } from "./models/User.js";
+import { hashPassword } from "./repos/userRepo.js";
+import { ID_SPECS, syncCounter } from "./repos/counterRepo.js";
 
 async function upsertAll<T extends { id: string }>(
   model: {
@@ -51,6 +54,45 @@ async function main(): Promise<void> {
   await upsertAll(InventoryModel, db.inventory, "inventory");
   await upsertAll(StaffModel, db.staff, "staff");
   await upsertAll(AuditModel, db.auditLogs, "audit logs");
+
+  await syncCounter(
+    ID_SPECS.patient,
+    db.patients.map((p) => p.id),
+  );
+  await syncCounter(
+    ID_SPECS.appointment,
+    db.appointments.map((a) => a.id),
+  );
+  await syncCounter(
+    ID_SPECS.invoice,
+    db.invoices.map((i) => i.id),
+  );
+  await syncCounter(
+    ID_SPECS.medicine,
+    db.medicines.map((m) => m.id),
+  );
+  await syncCounter(
+    ID_SPECS.lab,
+    db.labs.map((l) => l.id),
+  );
+  console.log("counters synced");
+
+  // Default admin (dev only) — change password immediately in real deployments
+  const adminEmail = process.env.SEED_ADMIN_EMAIL ?? "admin@careplus.local";
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? "Admin@123";
+  const existing = await UserModel.findOne({ email: adminEmail }).lean();
+  if (!existing) {
+    await UserModel.create({
+      email: adminEmail,
+      name: "Hospital Administrator",
+      passwordHash: await hashPassword(adminPassword),
+      role: "Admin",
+      isActive: true,
+    });
+    console.log(`admin user created: ${adminEmail}`);
+  } else {
+    console.log(`admin user already present: ${adminEmail}`);
+  }
 
   console.log("seed complete");
   await disconnectDB();

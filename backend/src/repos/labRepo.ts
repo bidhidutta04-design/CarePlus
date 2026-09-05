@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { LabModel } from "../models/LabReport.js";
 import { db } from "../store.js";
+import { ID_SPECS, nextId } from "./counterRepo.js";
 
 function isDbReady(): boolean {
   return mongoose.connection.readyState === 1;
@@ -49,10 +50,9 @@ export async function createLab(data: {
     db.labs.unshift(report);
     return report;
   }
-  const count = await LabModel.countDocuments();
   const payload = {
     ...data,
-    id: `LAB-${2001 + count}`,
+    id: await nextId(ID_SPECS.lab),
     status: "Ordered" as const,
     results: [],
     pathologistSign: "",

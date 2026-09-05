@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { AppointmentModel } from "../models/Appointment.js";
 import { db } from "../store.js";
+import { ID_SPECS, nextId } from "./counterRepo.js";
 
 function isDbReady(): boolean {
   return mongoose.connection.readyState === 1;
@@ -69,11 +70,11 @@ export async function createAppointment(data: {
     db.appointments.unshift(appt);
     return appt;
   }
-  const count = await AppointmentModel.countDocuments();
-  const n = 1255 + count + 1;
+  const id = await nextId(ID_SPECS.appointment);
+  const seq = Number(id.replace("APT-", ""));
   const payload = {
-    id: `APT-${n}`,
-    tokenNo: `OPD-${String(count + 1).padStart(2, "0")}`,
+    id,
+    tokenNo: `OPD-${String(seq - 1255 + 1).padStart(2, "0")}`,
     status: "Waiting" as const,
     ...data,
   };

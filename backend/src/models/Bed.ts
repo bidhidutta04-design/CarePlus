@@ -41,7 +41,7 @@ const bedSchema = new Schema(
       required: true,
     },
   },
-  { _id: false, versionKey: false, id: false },
+  {},
 );
 
 export const BedModel = mongoose.model("Bed", bedSchema);

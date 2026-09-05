@@ -1,12 +1,10 @@
 import { describe, expect, it } from "vitest";
 import request from "supertest";
 import { createApp } from "../src/app.js";
+import { loginAs } from "./helpers.js";
 
 async function adminToken(): Promise<string> {
-  const res = await request(createApp())
-    .post("/api/auth/login")
-    .send({ role: "Admin", name: "Tester" });
-  return res.body.data.token as string;
+  return loginAs("Admin");
 }
 
 describe("billing and pagination", () => {

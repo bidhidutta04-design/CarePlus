@@ -81,7 +81,7 @@ const invoiceSchema = new Schema(
       index: true,
     },
   },
-  { _id: false, versionKey: false, id: false },
+  {},
 );
 
 export const InvoiceModel = mongoose.model("Invoice", invoiceSchema);

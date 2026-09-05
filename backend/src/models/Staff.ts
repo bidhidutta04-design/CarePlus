@@ -39,7 +39,7 @@ const staffSchema = new Schema(
       index: true,
     },
   },
-  { _id: false, versionKey: false, id: false },
+  {},
 );
 
 export const StaffModel = mongoose.model("Staff", staffSchema);

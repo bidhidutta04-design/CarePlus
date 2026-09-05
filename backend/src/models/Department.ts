@@ -38,7 +38,7 @@ const departmentSchema = new Schema(
       required: true,
     },
   },
-  { _id: false, versionKey: false, id: false },
+  {},
 );
 
 export const DepartmentModel = mongoose.model("Department", departmentSchema);

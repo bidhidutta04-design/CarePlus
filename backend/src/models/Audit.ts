@@ -30,7 +30,7 @@ const auditSchema = new Schema(
       required: true,
     },
   },
-  { _id: false, versionKey: false, id: false },
+  {},
 );
 
 export const AuditModel = mongoose.model("Audit", auditSchema);

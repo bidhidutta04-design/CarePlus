@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { InvoiceModel } from "../models/Invoice.js";
 import { db } from "../store.js";
+import { ID_SPECS, nextId } from "./counterRepo.js";
 
 function isDbReady(): boolean {
   return mongoose.connection.readyState === 1;
@@ -53,10 +54,9 @@ export async function createInvoice(data: {
     db.invoices.unshift(inv);
     return inv;
   }
-  const count = await InvoiceModel.countDocuments();
   const payload = {
     ...data,
-    id: `INV-2025-${String(count + 1).padStart(3, "0")}`,
+    id: await nextId(ID_SPECS.invoice),
     date: new Date().toISOString().slice(0, 10),
     paidAmount: 0,
     balanceDue: data.totalAmount,

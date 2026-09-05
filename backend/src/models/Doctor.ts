@@ -50,7 +50,7 @@ const doctorSchema = new Schema(
       },
     },
   },
-  { _id: false, versionKey: false, id: false },
+  {},
 );
 
 export const DoctorModel = mongoose.model("Doctor", doctorSchema);

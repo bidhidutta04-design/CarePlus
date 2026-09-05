@@ -49,7 +49,7 @@ const medicineSchema = new Schema(
       index: true,
     },
   },
-  { _id: false, versionKey: false, id: false },
+  {},
 );
 
 export const MedicineModel = mongoose.model("Medicine", medicineSchema);

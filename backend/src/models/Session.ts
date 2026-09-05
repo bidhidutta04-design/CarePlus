@@ -47,7 +47,7 @@ const sessionSchema = new Schema(
       index: { expireAfterSeconds: 0 },
     },
   },
-  { timestamps: true, versionKey: false },
+  { timestamps: true },
 );
 
 export const SessionModel = mongoose.model("Session", sessionSchema);

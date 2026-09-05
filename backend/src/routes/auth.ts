@@ -1,5 +1,6 @@
 import { Router } from "express";
 import crypto from "node:crypto";
+import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { config } from "../config.js";
@@ -14,14 +15,15 @@ import {
   revokeFamily,
   rotateSession,
 } from "../repos/sessionRepo.js";
+import { findUserByEmail, verifyPassword } from "../repos/userRepo.js";
 
 const router = Router();
 
 const ROLES = ["Admin", "Doctor", "Nurse", "Pharmacist", "LabTech", "Cashier"] as const;
 
 const loginSchema = z.object({
-  role: z.enum(ROLES),
-  name: z.string().min(2).max(80),
+  email: z.string().email().max(120),
+  password: z.string().min(8).max(128),
 });
 
 const refreshSchema = z.object({
@@ -57,22 +59,44 @@ function refreshCookieOptions(maxAgeMs: number): {
   };
 }
 
-// POST /api/auth/login — role-based workstation sign-in (mock IdP; replace with LDAP/SSO).
+// POST /api/auth/login — credential sign-in against User collection (bcrypt).
 router.post(
   "/login",
   validate(loginSchema),
-  asyncHandler(async (req, res) => {
-    const { role, name } = req.body as { role: string; name: string };
-    const sub = `${role}-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+  asyncHandler(async (req, res, next) => {
+    if (mongoose.connection.readyState !== 1) {
+      next(ApiError.badRequest("Auth service unavailable — database not connected"));
+      return;
+    }
+    const { email, password } = req.body as { email: string; password: string };
+    const user = await findUserByEmail(email);
+    if (!user || !user.isActive || !(await verifyPassword(password, user.passwordHash))) {
+      next(ApiError.unauthorized("Invalid credentials"));
+      return;
+    }
+    const sub = `user-${user.email}`;
     const jti = crypto.randomUUID();
-    const token = signAccessToken({ sub, name, role, jti });
+    const token = signAccessToken({ sub, name: user.name, role: user.role, jti });
     const refreshToken = crypto.randomBytes(48).toString("base64url");
     const familyId = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + config.jwtRefreshExpiresMs);
-    await createSession({ refreshToken, sub, name, role, familyId, expiresAt });
+    await createSession({
+      refreshToken,
+      sub,
+      name: user.name,
+      role: user.role,
+      familyId,
+      expiresAt,
+    });
     res.cookie("refreshToken", refreshToken, refreshCookieOptions(config.jwtRefreshExpiresMs));
     res.json({
-      data: { token, refreshToken, role, name, expiresIn: config.jwtExpiresIn },
+      data: {
+        token,
+        refreshToken,
+        role: user.role,
+        name: user.name,
+        expiresIn: config.jwtExpiresIn,
+      },
     });
   }),
 );

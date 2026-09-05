@@ -42,7 +42,7 @@ const inventorySchema = new Schema(
       required: true,
     },
   },
-  { _id: false, versionKey: false, id: false },
+  {},
 );
 
 export const InventoryModel = mongoose.model("Inventory", inventorySchema);

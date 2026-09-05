@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { MedicineModel } from "../models/Medicine.js";
 import { db } from "../store.js";
+import { ID_SPECS, nextId } from "./counterRepo.js";
 
 function isDbReady(): boolean {
   return mongoose.connection.readyState === 1;
@@ -71,10 +72,9 @@ export async function createMedicine(data: {
     db.medicines.unshift(med);
     return med;
   }
-  const count = await MedicineModel.countDocuments();
   const payload = {
     ...data,
-    id: `MED-${String(count + 1).padStart(3, "0")}`,
+    id: await nextId(ID_SPECS.medicine),
     status: (data.stockCount < data.minThreshold ? "Low Stock" : "Healthy") as
       "Healthy" | "Low Stock",
   };

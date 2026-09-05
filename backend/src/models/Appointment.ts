@@ -86,7 +86,7 @@ const appointmentSchema = new Schema(
       required: false,
     },
   },
-  { _id: false, versionKey: false, id: false },
+  {},
 );
 
 export const AppointmentModel = mongoose.model("Appointment", appointmentSchema);
