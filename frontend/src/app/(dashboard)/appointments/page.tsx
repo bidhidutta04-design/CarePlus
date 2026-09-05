@@ -18,16 +18,14 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { BookAppointmentModal } from "@/components/clinical/BookAppointmentModal";
 import { TriageVitalsModal } from "@/components/clinical/TriageVitalsModal";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { updateAppointmentStatus } from "@/store/clinicalSlice";
-import type { Appointment } from "@/types/appointment";
+import { useAppointments, useUpdateAppointmentStatus } from "@/hooks/useAppointments";
+import type { ApiAppointment } from "@/hooks/useAppointments";
 import { CalendarPlus, Stethoscope } from "lucide-react";
 
-const col = createColumnHelper<Appointment>();
+const col = createColumnHelper<ApiAppointment>();
 
 export default function AppointmentsPage() {
-  const dispatch = useAppDispatch();
-  const appointments = useAppSelector((s) => s.clinical.appointments);
+  const updateStatus = useUpdateAppointmentStatus();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [query, setQuery] = useState("");
   const [dept, setDept] = useState("All");
@@ -36,20 +34,26 @@ export default function AppointmentsPage() {
   const [bookOpen, setBookOpen] = useState(false);
   const [vitalsOpen, setVitalsOpen] = useState(false);
 
+  const { data, isLoading } = useAppointments({
+    status: status !== "All" ? status : undefined,
+    department: dept !== "All" ? dept : undefined,
+    priority: priority !== "All" ? priority : undefined,
+    search: query || undefined,
+  });
+  const appointments = data?.data ?? [];
+
   const depts = useMemo(() => ["All", ...Array.from(new Set(appointments.map((a) => a.department)))], [appointments]);
 
-  const filtered = useMemo(
-    () =>
-      appointments.filter(
-        (a) =>
-          (dept === "All" || a.department === dept) &&
-          (priority === "All" || a.priority === priority) &&
-          (status === "All" || a.status === status) &&
-          (query === "" ||
-            [a.id, a.patientName, a.doctorName, a.tokenNo].join(" ").toLowerCase().includes(query.toLowerCase()))
-      ),
-    [appointments, dept, priority, status, query]
-  );
+  const filtered = useMemo(() => {
+    return appointments.filter(
+      (a) =>
+        (dept === "All" || a.department === dept) &&
+        (priority === "All" || a.priority === priority) &&
+        (status === "All" || a.status === status) &&
+        (query === "" ||
+          [a.id, a.patientName, a.doctorName, a.tokenNo].join(" ").toLowerCase().includes(query.toLowerCase()))
+    );
+  }, [appointments, dept, priority, status, query]);
 
   const columns = useMemo(
     () => [
@@ -79,20 +83,20 @@ export default function AppointmentsPage() {
                 <Button size="sm" variant="outline" onClick={() => setVitalsOpen(true)}>Record vitals</Button>
               )}
               {a.status === "In Triage" && (
-                <Button size="sm" variant="outline" onClick={() => dispatch(updateAppointmentStatus({ id: a.id, status: "With Doctor" }))}>Call to doctor</Button>
+                <Button size="sm" variant="outline" onClick={() => updateStatus.mutate({ id: a.id, status: "With Doctor" })}>Call to doctor</Button>
               )}
               {a.status === "With Doctor" && (
-                <Button size="sm" variant="outline" onClick={() => dispatch(updateAppointmentStatus({ id: a.id, status: "Completed" }))}>Complete</Button>
+                <Button size="sm" variant="outline" onClick={() => updateStatus.mutate({ id: a.id, status: "Completed" })}>Complete</Button>
               )}
               {!["Completed", "Cancelled"].includes(a.status) && (
-                <Button size="sm" variant="ghost" className="text-red-600" onClick={() => dispatch(updateAppointmentStatus({ id: a.id, status: "Cancelled" }))}>Cancel</Button>
+                <Button size="sm" variant="ghost" className="text-red-600" onClick={() => updateStatus.mutate({ id: a.id, status: "Cancelled" })}>Cancel</Button>
               )}
             </div>
           );
         },
       }),
     ],
-    [dispatch]
+    [updateStatus]
   );
 
   const table = useReactTable({
@@ -111,7 +115,7 @@ export default function AppointmentsPage() {
     <div>
       <PageHeader
         title="Appointments — Live Token Queue"
-        subtitle={`${filtered.length} tokens • click a column header to sort`}
+        subtitle={isLoading ? "Loading appointments…" : `${filtered.length} tokens • click a column header to sort`}
         actions={
           <>
             <Button variant="outline" size="sm" onClick={() => setVitalsOpen(true)}><Stethoscope className="mr-1.5 h-4 w-4" />Record vitals</Button>
@@ -137,32 +141,35 @@ export default function AppointmentsPage() {
           </div>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((hg) => (
-                <TableRow key={hg.id}>
-                  {hg.headers.map((h) => (
-                    <TableHead key={h.id} onClick={h.column.getToggleSortingHandler()} className="cursor-pointer select-none whitespace-nowrap">
-                      {flexRender(h.column.columnDef.header, h.getContext())}
-                      {h.column.getIsSorted() === "asc" ? " ↑" : h.column.getIsSorted() === "desc" ? " ↓" : ""}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.map((r) => (
-                <TableRow key={r.id}>
-                  {r.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="whitespace-nowrap">{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
-                  ))}
-                </TableRow>
-              ))}
-              {table.getRowModel().rows.length === 0 && (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">No tokens match filters.</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
+          {isLoading && <p className="py-8 text-center text-sm text-muted-foreground">Loading appointments…</p>}
+          {!isLoading && (
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((hg) => (
+                  <TableRow key={hg.id}>
+                    {hg.headers.map((h) => (
+                      <TableHead key={h.id} onClick={h.column.getToggleSortingHandler()} className="cursor-pointer select-none whitespace-nowrap">
+                        {flexRender(h.column.columnDef.header, h.getContext())}
+                        {h.column.getIsSorted() === "asc" ? " ↑" : h.column.getIsSorted() === "desc" ? " ↓" : ""}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.map((r) => (
+                  <TableRow key={r.id}>
+                    {r.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className="whitespace-nowrap">{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+                {table.getRowModel().rows.length === 0 && (
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">No tokens match filters.</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
       <BookAppointmentModal open={bookOpen} onClose={() => setBookOpen(false)} />

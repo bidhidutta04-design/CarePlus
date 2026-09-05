@@ -6,8 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAppDispatch } from "@/store/hooks";
-import { updateAppointmentStatus } from "@/store/clinicalSlice";
+import { useUpdateAppointmentStatus } from "@/hooks/useAppointments";
 
 const schema = z.object({
   appointmentId: z.string().min(1, "Enter appointment ID"),
@@ -20,19 +19,17 @@ const schema = z.object({
 type Form = z.infer<typeof schema>;
 
 export function TriageVitalsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const dispatch = useAppDispatch();
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<Form>({
+  const updateStatus = useUpdateAppointmentStatus();
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<Form>({
     resolver: zodResolver(schema),
     defaultValues: { bp: "120/80", pulse: 80, spo2: 98, temp: 98.6 },
   });
 
   const onSubmit = (v: Form): void => {
-    dispatch({
-      type: updateAppointmentStatus.type,
-      payload: { id: v.appointmentId, status: "In Triage", vitals: { bp: v.bp, pulse: v.pulse, spo2: v.spo2, temp: v.temp } },
-    });
-    reset();
-    onClose();
+    updateStatus.mutate(
+      { id: v.appointmentId, status: "In Triage", vitals: { bp: v.bp, pulse: v.pulse, spo2: v.spo2, temp: v.temp } },
+      { onSuccess: () => { reset(); onClose(); } }
+    );
   };
 
   const field = "grid gap-1 text-sm";
@@ -48,8 +45,8 @@ export function TriageVitalsModal({ open, onClose }: { open: boolean; onClose: (
           <label className={field}>SpO2 %<Input type="number" {...register("spo2")} /></label>
           <label className={field}>Temp °F<Input type="number" step="0.1" {...register("temp")} /></label>
           <DialogFooter className="col-span-2">
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit">Save & move to triage</Button>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
+            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Saving…" : "Save & move to triage"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
