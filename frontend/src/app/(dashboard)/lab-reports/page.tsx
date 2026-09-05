@@ -9,23 +9,23 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { KpiCard } from "@/components/shared/KpiCard";
 import { OrderLabModal } from "@/components/clinical/OrderLabModal";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { updateLabStatus } from "@/store/opsSlice";
-import type { LabReport, LabStatus } from "@/types/lab";
+import { useLabReports, useUpdateLabStatus } from "@/hooks/useLab";
+import type { ApiLabReport } from "@/hooks/useLab";
 import { FlaskConical, Clock, CheckCircle2, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const STAGES: LabStatus[] = ["Ordered", "Sample Collected", "Under Analysis", "Report Approved"];
+const STAGES: ApiLabReport["status"][] = ["Ordered", "Sample Collected", "Under Analysis", "Report Approved"];
 
 export default function LabPage() {
-  const dispatch = useAppDispatch();
-  const labs = useAppSelector((s) => s.ops.labs);
+  const updateLabStatus = useUpdateLabStatus();
+  const { data, isLoading } = useLabReports();
+  const labs = data?.data ?? [];
   const [orderOpen, setOrderOpen] = useState(false);
-  const [entry, setEntry] = useState<LabReport | null>(null);
-  const [print, setPrint] = useState<LabReport | null>(null);
+  const [entry, setEntry] = useState<ApiLabReport | null>(null);
+  const [print, setPrint] = useState<ApiLabReport | null>(null);
   const [draft, setDraft] = useState<Array<{ parameter: string; value: string; unit: string; normalRange: string }>>([]);
 
-  const openEntry = (lab: LabReport): void => {
+  const openEntry = (lab: ApiLabReport): void => {
     setEntry(lab);
     setDraft(
       lab.results.length > 0
@@ -36,26 +36,24 @@ export default function LabPage() {
 
   const saveResults = (approve: boolean): void => {
     if (!entry) return;
-    dispatch(
-      updateLabStatus({
-        id: entry.id,
-        status: approve ? "Report Approved" : "Under Analysis",
-        results: draft.filter((d) => d.parameter).map((d) => ({ ...d, isAbnormal: d.value.toUpperCase().includes("HIGH") || d.value.includes("*") })),
-      })
-    );
+    updateLabStatus.mutate({
+      id: entry.id,
+      status: approve ? "Report Approved" : "Under Analysis",
+      results: draft.filter((d) => d.parameter).map((d) => ({ ...d, isAbnormal: d.value.toUpperCase().includes("HIGH") || d.value.includes("*") })),
+    });
     setEntry(null);
   };
 
-  const advance = (lab: LabReport): void => {
+  const advance = (lab: ApiLabReport): void => {
     const i = STAGES.indexOf(lab.status);
-    if (i < STAGES.length - 1) dispatch(updateLabStatus({ id: lab.id, status: STAGES[i + 1] }));
+    if (i < STAGES.length - 1) updateLabStatus.mutate({ id: lab.id, status: STAGES[i + 1] });
   };
 
   return (
     <div>
       <PageHeader
         title="Diagnostics — 4-Stage Pipeline"
-        subtitle="Ordered → Sample Collected → Under Analysis → Report Approved"
+        subtitle={isLoading ? "Loading lab reports…" : "Ordered → Sample Collected → Under Analysis → Report Approved"}
         actions={<Button size="sm" onClick={() => setOrderOpen(true)}>Order test</Button>}
       />
       <div className="grid gap-4 sm:grid-cols-3">

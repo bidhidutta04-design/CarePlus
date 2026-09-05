@@ -4,21 +4,24 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { seedDepartments } from "@/lib/seed-data";
-import { useAppSelector } from "@/store/hooks";
+import { useDepartments } from "@/hooks/useDepartments";
+import { useBeds } from "@/hooks/useBeds";
 
 export default function DepartmentsPage() {
-  const beds = useAppSelector((s) => s.ops.beds);
+  const { data: deptData, isLoading: deptLoading } = useDepartments();
+  const { data: bedData } = useBeds();
+  const departments = deptData?.data ?? [];
+  const beds = bedData?.data ?? [];
 
   return (
     <div>
       <PageHeader
         title="Medical Specialties"
-        subtitle={`${seedDepartments.length} departments`}
+        subtitle={deptLoading ? "Loading departments…" : `${departments.length} departments`}
         actions={<Button asChild size="sm"><Link href="/departments/beds">Open live bed board</Link></Button>}
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {seedDepartments.map((d) => {
+        {departments.map((d) => {
           const pct = d.bedCount === 0 ? 0 : Math.round((d.occupiedBeds / d.bedCount) * 100);
           return (
             <Card key={d.id} className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
@@ -44,6 +47,9 @@ export default function DepartmentsPage() {
             </Card>
           );
         })}
+        {!deptLoading && departments.length === 0 && (
+          <p className="col-span-full py-8 text-center text-sm text-muted-foreground">No departments found.</p>
+        )}
       </div>
     </div>
   );

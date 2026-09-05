@@ -9,12 +9,14 @@ import { Switch } from "@/components/ui/switch";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useTheme } from "next-themes";
 import { useAppSelector } from "@/store/hooks";
-import { seedAudit } from "@/lib/seed-data";
+import { useAuditLogs } from "@/hooks/useAudit";
 import { Lock } from "lucide-react";
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const role = useAppSelector((s) => s.auth.role);
+  const { data: auditData, isLoading: auditLoading } = useAuditLogs();
+  const auditLogs = auditData?.data ?? [];
   const [name, setName] = useState("CarePlus Multi-Speciality Hospital");
   const [slot, setSlot] = useState(30);
   const [saved, setSaved] = useState(false);
@@ -74,21 +76,27 @@ export default function SettingsPage() {
           <CardTitle>Immutable system audit log</CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader><TableRow><TableHead>ID</TableHead><TableHead>Timestamp</TableHead><TableHead>User</TableHead><TableHead>Role</TableHead><TableHead>Action</TableHead><TableHead>IP</TableHead></TableRow></TableHeader>
-            <TableBody>
-              {seedAudit.map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell className="font-mono text-xs">{a.id}</TableCell>
-                  <TableCell className="whitespace-nowrap">{a.timestamp}</TableCell>
-                  <TableCell>{a.user}</TableCell>
-                  <TableCell>{a.role}</TableCell>
-                  <TableCell>{a.action}</TableCell>
-                  <TableCell className="font-mono text-xs">{a.ipAddress}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          {auditLoading && <p className="py-4 text-center text-sm text-muted-foreground">Loading audit log…</p>}
+          {!auditLoading && (
+            <Table>
+              <TableHeader><TableRow><TableHead>ID</TableHead><TableHead>Timestamp</TableHead><TableHead>User</TableHead><TableHead>Role</TableHead><TableHead>Action</TableHead><TableHead>IP</TableHead></TableRow></TableHeader>
+              <TableBody>
+                {auditLogs.map((a) => (
+                  <TableRow key={a.id}>
+                    <TableCell className="font-mono text-xs">{a.id}</TableCell>
+                    <TableCell className="whitespace-nowrap">{a.timestamp}</TableCell>
+                    <TableCell>{a.user}</TableCell>
+                    <TableCell>{a.role}</TableCell>
+                    <TableCell>{a.action}</TableCell>
+                    <TableCell className="font-mono text-xs">{a.ipAddress}</TableCell>
+                  </TableRow>
+                ))}
+                {auditLogs.length === 0 && (
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">No audit entries.</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
           <p className="mt-2 text-xs text-muted-foreground">Append-only trail — entries cannot be edited or deleted from this console.</p>
         </CardContent>
       </Card>

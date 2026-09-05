@@ -13,8 +13,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { KpiCard } from "@/components/shared/KpiCard";
 import { DispenseModal } from "@/components/clinical/DispenseModal";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { addMedicine } from "@/store/opsSlice";
+import { useMedicines, useCreateMedicine } from "@/hooks/usePharmacy";
 import { formatINR } from "@/lib/utils";
 import { Pill, TriangleAlert, CalendarClock, Plus } from "lucide-react";
 
@@ -32,16 +31,17 @@ const schema = z.object({
 type Form = z.infer<typeof schema>;
 
 function daysToExpiry(expiry: string): number {
-  return Math.ceil((new Date(expiry).getTime() - new Date("2026-09-04").getTime()) / 86400000);
+  return Math.ceil((new Date(expiry).getTime() - Date.now()) / 86400000);
 }
 
 export default function PharmacyPage() {
-  const dispatch = useAppDispatch();
-  const medicines = useAppSelector((s) => s.ops.medicines);
+  const createMedicine = useCreateMedicine();
+  const { data, isLoading } = useMedicines();
+  const medicines = data?.data ?? [];
   const [query, setQuery] = useState("");
   const [dispenseOpen, setDispenseOpen] = useState(false);
   const [batchOpen, setBatchOpen] = useState(false);
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<Form>({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<Form>({ resolver: zodResolver(schema) });
 
   const sorted = useMemo(
     () =>
@@ -55,23 +55,21 @@ export default function PharmacyPage() {
   const exp = medicines.filter((m) => m.status === "Expired").length;
   const soon = medicines.filter((m) => m.status !== "Expired" && daysToExpiry(m.expiryDate) < 60).length;
 
-  const onSubmit = (v: Form): void => {
-    dispatch(
-      addMedicine({
-        id: `MED-${String(medicines.length + 1).padStart(3, "0")}`,
-        ...v,
-        status: v.stockCount < v.minThreshold ? "Low Stock" : "Healthy",
-      })
-    );
-    reset();
-    setBatchOpen(false);
+  const onSubmit = async (v: Form): Promise<void> => {
+    try {
+      await createMedicine.mutateAsync(v);
+      reset();
+      setBatchOpen(false);
+    } catch {
+      // error handled by hook
+    }
   };
 
   return (
     <div>
       <PageHeader
         title="Pharmacy — FEFO Inventory"
-        subtitle="Sorted earliest-expiry-first • dispensing auto-deducts + bills"
+        subtitle={isLoading ? "Loading medicines…" : "Sorted earliest-expiry-first • dispensing auto-deducts + bills"}
         actions={
           <>
             <Button variant="outline" size="sm" onClick={() => setBatchOpen(true)}><Plus className="mr-1.5 h-4 w-4" />Add batch</Button>
@@ -90,32 +88,35 @@ export default function PharmacyPage() {
           <Input placeholder="Search brand, generic, batch…" value={query} onChange={(e) => setQuery(e.target.value)} className="max-w-64" aria-label="Search medicines" />
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Brand / Generic</TableHead><TableHead>Batch</TableHead><TableHead>Expiry</TableHead>
-                <TableHead>Price</TableHead><TableHead>Stock</TableHead><TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sorted.map((m) => {
-                const d = daysToExpiry(m.expiryDate);
-                return (
-                  <TableRow key={m.id}>
-                    <TableCell><span className="font-medium">{m.brandName}</span><span className="block text-xs text-muted-foreground">{m.genericName} • {m.category}</span></TableCell>
-                    <TableCell className="font-mono text-xs">{m.batchNo}</TableCell>
-                    <TableCell>
-                      {m.expiryDate}
-                      {m.status !== "Expired" && d < 60 && <span className="ml-2 rounded-full bg-[#fef2d6] px-2 py-0.5 text-[11px] font-semibold text-[#965f0e]">{d}d left</span>}
-                    </TableCell>
-                    <TableCell>{formatINR(m.unitPrice)}</TableCell>
-                    <TableCell className={m.stockCount < m.minThreshold ? "font-bold text-red-600" : ""}>{m.stockCount} <span className="text-xs text-muted-foreground">/ min {m.minThreshold}</span></TableCell>
-                    <TableCell><StatusBadge status={m.status} /></TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+          {isLoading && <p className="py-8 text-center text-sm text-muted-foreground">Loading medicines…</p>}
+          {!isLoading && (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Brand / Generic</TableHead><TableHead>Batch</TableHead><TableHead>Expiry</TableHead>
+                  <TableHead>Price</TableHead><TableHead>Stock</TableHead><TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sorted.map((m) => {
+                  const d = daysToExpiry(m.expiryDate);
+                  return (
+                    <TableRow key={m.id}>
+                      <TableCell><span className="font-medium">{m.brandName}</span><span className="block text-xs text-muted-foreground">{m.genericName} • {m.category}</span></TableCell>
+                      <TableCell className="font-mono text-xs">{m.batchNo}</TableCell>
+                      <TableCell>
+                        {m.expiryDate}
+                        {m.status !== "Expired" && d < 60 && <span className="ml-2 rounded-full bg-[#fef2d6] px-2 py-0.5 text-[11px] font-semibold text-[#965f0e]">{d}d left</span>}
+                      </TableCell>
+                      <TableCell>{formatINR(m.unitPrice)}</TableCell>
+                      <TableCell className={m.stockCount < m.minThreshold ? "font-bold text-red-600" : ""}>{m.stockCount} <span className="text-xs text-muted-foreground">/ min {m.minThreshold}</span></TableCell>
+                      <TableCell><StatusBadge status={m.status} /></TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
       <DispenseModal open={dispenseOpen} onClose={() => setDispenseOpen(false)} />
@@ -132,8 +133,8 @@ export default function PharmacyPage() {
             <label className="grid gap-1 text-sm">Stock<Input type="number" {...register("stockCount")} /></label>
             <label className="grid gap-1 text-sm">Min threshold<Input type="number" {...register("minThreshold")} /></label>
             <DialogFooter className="col-span-2">
-              <Button type="button" variant="outline" onClick={() => setBatchOpen(false)}>Cancel</Button>
-              <Button type="submit">Add batch</Button>
+              <Button type="button" variant="outline" onClick={() => setBatchOpen(false)} disabled={isSubmitting}>Cancel</Button>
+              <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Adding…" : "Add batch"}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

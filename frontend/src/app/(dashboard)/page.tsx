@@ -7,34 +7,42 @@ import { AnimatedNumber } from "@/components/shared/AnimatedNumber";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useAppSelector } from "@/store/hooks";
+import { useAppointments } from "@/hooks/useAppointments";
+import { usePatients } from "@/hooks/usePatients";
+import { useBeds } from "@/hooks/useBeds";
+import { useInvoices } from "@/hooks/useBilling";
 import { formatINR } from "@/lib/utils";
-import { hourlyOPD, deptShare } from "@/lib/seed-data";
 import { CalendarCheck, BedDouble, Wallet, Siren } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export default function DashboardPage() {
-  const appointments = useAppSelector((s) => s.clinical.appointments);
-  const patients = useAppSelector((s) => s.clinical.patients);
-  const beds = useAppSelector((s) => s.ops.beds);
-  const invoices = useAppSelector((s) => s.ops.invoices);
+  const userName = useAppSelector((s) => s.auth.userName);
+  const { data: apptData, isLoading: apptLoading } = useAppointments();
+  const { data: patData } = usePatients();
+  const { data: bedData } = useBeds();
+  const { data: invData } = useInvoices();
 
+  const appointments = apptData?.data ?? [];
+  const patients = patData?.data ?? [];
+  const beds = bedData?.data ?? [];
+  const invoices = invData?.data ?? [];
+
+  const todayISO = new Date().toISOString().slice(0, 10);
   const activeQueue = appointments.filter((a) => ["Waiting", "In Triage", "With Doctor"].includes(a.status));
   const inpatients = patients.filter((p) => p.admissionStatus === "Admitted").length;
   const outpatients = patients.filter((p) => p.admissionStatus === "OPD").length;
   const occupied = beds.filter((b) => b.status === "Occupied").length;
   const occupancy = beds.length > 0 ? Math.round((occupied / beds.length) * 100) : 0;
-  const todayISO = new Date().toISOString().slice(0, 10);
   const todayRevenue = invoices.filter((i) => i.date === todayISO).reduce((s, i) => s + i.paidAmount, 0);
   const emergencies = appointments.filter((a) => a.priority === "Emergency" && a.status !== "Completed" && a.status !== "Cancelled");
-  const maxOPD = hourlyOPD.length > 0 ? Math.max(...hourlyOPD.map((h) => h.count)) : 0;
   const circ = 2 * Math.PI * 44;
 
-  const opdCount = activeQueue.length + 3;
+  const opdCount = activeQueue.length;
 
   return (
     <div>
-      <PageHeader title="Executive Dashboard" subtitle={`Hospital operations at a glance — ${new Date().toLocaleDateString("en-US", { weekday: "long", day: "2-digit", month: "short", year: "numeric" })}`} />
+      <PageHeader title={`Welcome, ${userName}`} subtitle={apptLoading ? "Loading dashboard…" : `Hospital operations at a glance — ${new Date().toLocaleDateString("en-US", { weekday: "long", day: "2-digit", month: "short", year: "numeric" })}`} />
 
       {emergencies.length > 0 && (
         <div className="mb-4 flex items-center gap-2 overflow-hidden rounded-2xl border border-red-200 bg-[#fde8e8] px-4 py-2.5 text-sm font-medium text-[#c62828]">
@@ -96,41 +104,6 @@ export default function DashboardPage() {
               <p className="text-muted-foreground">ICU, Emergency, Wards & Suites</p>
               <Link href="/departments/beds" className="text-clinical hover:underline">Open bed board →</Link>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <Card className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
-          <CardHeader><CardTitle>Hourly OPD Load</CardTitle></CardHeader>
-          <CardContent>
-            <div className="flex h-36 items-end justify-between gap-1.5" role="img" aria-label="Hourly OPD traffic bar chart">
-              {hourlyOPD.map((h) => (
-                <div key={h.hour} className="flex flex-1 flex-col items-center gap-1">
-                  <div className="flex h-28 w-full max-w-9 items-end rounded-t-lg bg-[#dbe7f2]">
-                    <div className="w-full rounded-t-lg bg-clinical" style={{ height: `${Math.round((h.count / maxOPD) * 100)}%` }} title={`${h.hour}: ${h.count}`} />
-                  </div>
-                  <span className="text-[10px] font-medium text-muted-foreground">{h.hour.replace(" ", "")}</span>
-                </div>
-              ))}
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">Peak intake 11 AM (41 patients). Plan triage cover 10 AM – 1 PM.</p>
-          </CardContent>
-        </Card>
-        <Card className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
-          <CardHeader><CardTitle>Department Patient Share</CardTitle></CardHeader>
-          <CardContent className="grid gap-3">
-            {deptShare.map((d) => (
-              <div key={d.dept} className="flex items-center gap-3">
-                <span className="w-36 truncate text-sm font-medium">{d.dept}</span>
-                <div className="h-2 flex-1 rounded-full bg-[#e9eef4]">
-                  <div className="h-2 rounded-full bg-clinical" style={{ width: `${d.pct}%` }} />
-                </div>
-                <span className="w-11 text-right text-sm font-semibold text-[#0b2b4a] dark:text-foreground">
-                  <AnimatedNumber value={d.pct} format={(n) => `${Math.round(n)}%`} duration={600} />
-                </span>
-              </div>
-            ))}
           </CardContent>
         </Card>
       </div>

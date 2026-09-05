@@ -10,19 +10,19 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { KpiCard } from "@/components/shared/KpiCard";
 import { CreateInvoiceModal } from "@/components/clinical/CreateInvoiceModal";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { updateInvoicePayment } from "@/store/opsSlice";
+import { useInvoices, useCollectPayment } from "@/hooks/useBilling";
+import type { ApiInvoice } from "@/hooks/useBilling";
 import { formatINR } from "@/lib/utils";
-import type { Invoice } from "@/types/billing";
 import { Wallet, HandCoins, Hourglass, ShieldCheck, Printer, Plus } from "lucide-react";
 
 export default function BillingPage() {
-  const dispatch = useAppDispatch();
-  const invoices = useAppSelector((s) => s.ops.invoices);
+  const collectPayment = useCollectPayment();
+  const { data, isLoading } = useInvoices();
+  const invoices = data?.data ?? [];
   const [filter, setFilter] = useState("All");
   const [createOpen, setCreateOpen] = useState(false);
-  const [pay, setPay] = useState<Invoice | null>(null);
-  const [print, setPrint] = useState<Invoice | null>(null);
+  const [pay, setPay] = useState<ApiInvoice | null>(null);
+  const [print, setPrint] = useState<ApiInvoice | null>(null);
   const [amount, setAmount] = useState(0);
 
   const billed = invoices.reduce((s, i) => s + i.totalAmount, 0);
@@ -35,7 +35,7 @@ export default function BillingPage() {
     <div>
       <PageHeader
         title="Billing & Financial Management"
-        subtitle="Consolidated invoicing • TPA claims • GST receipts"
+        subtitle={isLoading ? "Loading invoices…" : "Consolidated invoicing • TPA claims • GST receipts"}
         actions={<Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="mr-1.5 h-4 w-4" />Create invoice</Button>}
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -52,33 +52,39 @@ export default function BillingPage() {
           </select>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow><TableHead>ID</TableHead><TableHead>Patient</TableHead><TableHead>Date</TableHead><TableHead>Total</TableHead><TableHead>Paid</TableHead><TableHead>Balance</TableHead><TableHead>Method</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead></TableRow>
-            </TableHeader>
-            <TableBody>
-              {list.map((i) => (
-                <TableRow key={i.id}>
-                  <TableCell className="font-semibold">{i.id}</TableCell>
-                  <TableCell>{i.patientName}<span className="block text-xs text-muted-foreground">{i.patientId}</span></TableCell>
-                  <TableCell>{i.date}</TableCell>
-                  <TableCell className="font-semibold">{formatINR(i.totalAmount)}</TableCell>
-                  <TableCell>{formatINR(i.paidAmount)}</TableCell>
-                  <TableCell className={i.balanceDue > 0 ? "font-bold text-red-600" : ""}>{formatINR(i.balanceDue)}</TableCell>
-                  <TableCell className="text-xs">{i.paymentMethod}{i.tpaProvider ? ` • ${i.tpaProvider}` : ""}</TableCell>
-                  <TableCell><StatusBadge status={i.status} /></TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      {i.balanceDue > 0 && (
-                        <Button size="sm" variant="outline" onClick={() => { setPay(i); setAmount(i.balanceDue); }}>Collect</Button>
-                      )}
-                      <Button size="sm" variant="ghost" onClick={() => setPrint(i)}><Printer className="h-3.5 w-3.5" /></Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          {isLoading && <p className="py-8 text-center text-sm text-muted-foreground">Loading invoices…</p>}
+          {!isLoading && (
+            <Table>
+              <TableHeader>
+                <TableRow><TableHead>ID</TableHead><TableHead>Patient</TableHead><TableHead>Date</TableHead><TableHead>Total</TableHead><TableHead>Paid</TableHead><TableHead>Balance</TableHead><TableHead>Method</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead></TableRow>
+              </TableHeader>
+              <TableBody>
+                {list.map((i) => (
+                  <TableRow key={i.id}>
+                    <TableCell className="font-semibold">{i.id}</TableCell>
+                    <TableCell>{i.patientName}<span className="block text-xs text-muted-foreground">{i.patientId}</span></TableCell>
+                    <TableCell>{i.date}</TableCell>
+                    <TableCell className="font-semibold">{formatINR(i.totalAmount)}</TableCell>
+                    <TableCell>{formatINR(i.paidAmount)}</TableCell>
+                    <TableCell className={i.balanceDue > 0 ? "font-bold text-red-600" : ""}>{formatINR(i.balanceDue)}</TableCell>
+                    <TableCell className="text-xs">{i.paymentMethod}{i.tpaProvider ? ` • ${i.tpaProvider}` : ""}</TableCell>
+                    <TableCell><StatusBadge status={i.status} /></TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        {i.balanceDue > 0 && (
+                          <Button size="sm" variant="outline" onClick={() => { setPay(i); setAmount(i.balanceDue); }}>Collect</Button>
+                        )}
+                        <Button size="sm" variant="ghost" onClick={() => setPrint(i)}><Printer className="h-3.5 w-3.5" /></Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {list.length === 0 && (
+                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground">No invoices found.</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
@@ -92,14 +98,15 @@ export default function BillingPage() {
             <label className="grid gap-1 text-sm">Amount<Input type="number" value={amount} onChange={(e) => setAmount(Number(e.target.value))} /></label>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPay(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setPay(null)} disabled={collectPayment.isPending}>Cancel</Button>
             <Button
+              disabled={collectPayment.isPending}
               onClick={() => {
-                if (pay && amount > 0) dispatch(updateInvoicePayment({ id: pay.id, amount: Math.min(amount, pay.balanceDue) }));
+                if (pay && amount > 0) collectPayment.mutate({ id: pay.id, amount: Math.min(amount, pay.balanceDue) });
                 setPay(null);
               }}
             >
-              Record payment
+              {collectPayment.isPending ? "Recording…" : "Record payment"}
             </Button>
           </DialogFooter>
         </DialogContent>
