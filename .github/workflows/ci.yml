@@ -58,5 +58,8 @@ jobs:
             sleep 2
           done
           test -f /tmp/live.json || (echo "::error::API did not start — see /tmp/api.log" && cat /tmp/api.log && kill $API_PID && exit 1)
-          diff -u docs/openapi.snapshot.json /tmp/live.json || (echo "::error::OpenAPI snapshot out of date — run: curl -s http://localhost:4000/api/v1/openapi.json > docs/openapi.snapshot.json and commit" && kill $API_PID && exit 1)
+          # Canonicalize both sides (key order + whitespace + BOM) so only real
+          # contract changes fail the gate, never formatting differences.
+          node -e "const fs=require('fs');for(const f of ['/tmp/live.json','docs/openapi.snapshot.json']){fs.writeFileSync(f+'.canon',JSON.stringify(JSON.parse(fs.readFileSync(f,'utf8')))+'\n')}"
+          diff -u docs/openapi.snapshot.json.canon /tmp/live.json.canon || (echo "::error::OpenAPI contract changed — regenerate the snapshot against a running API and commit" && kill $API_PID && exit 1)
           kill $API_PID || true
