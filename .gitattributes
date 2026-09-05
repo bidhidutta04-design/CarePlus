@@ -1,0 +1,6 @@
+# Normalize all text files to LF on commit, checkout as LF everywhere.
+# Prevents phantom "modified" flags from core.autocrlf on Windows.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
