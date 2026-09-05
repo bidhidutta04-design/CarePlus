@@ -102,6 +102,11 @@ router.post(
       return;
     }
     const updated = await collectInvoice(req.params.id, amount);
+    if (!updated) {
+      // Lost a concurrent race after the pre-check — guard refused the write
+      next(ApiError.conflict("Payment no longer applicable — balance changed"));
+      return;
+    }
     res.json({ data: updated });
   }),
 );

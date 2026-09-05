@@ -99,16 +99,23 @@ export async function dispenseMedicine(
     if (med.stockCount < med.minThreshold) med.status = "Low Stock";
     return med;
   }
-  // Atomic conditional decrement — concurrent dispenses can never oversell
-  const med = await MedicineModel.findOneAndUpdate(
+  // Single atomic write — decrement + status sync together, no second save
+  // that could fail and leave stock and status permanently out of sync.
+  // NOTE: native collection call — this Mongoose version gates pipeline updates
+  // on queries, and the driver supports them directly.
+  const doc = await MedicineModel.collection.findOneAndUpdate(
     { id, stockCount: { $gte: qty } },
-    { $inc: { stockCount: -qty } },
-    { new: true },
+    [
+      { $set: { stockCount: { $subtract: ["$stockCount", qty] } } },
+      {
+        $set: {
+          status: {
+            $cond: [{ $lt: ["$stockCount", "$minThreshold"] }, "Low Stock", "$status"],
+          },
+        },
+      },
+    ],
+    { returnDocument: "after" },
   );
-  if (!med) return null;
-  if (med.stockCount < (med.minThreshold as unknown as number)) {
-    med.status = "Low Stock" as unknown as typeof med.status;
-    await med.save();
-  }
-  return med.toObject() as unknown as (typeof db.medicines)[number];
+  return (doc as unknown as (typeof db.medicines)[number]) ?? null;
 }

@@ -110,19 +110,30 @@ export async function appendInvoiceItem(
 ): Promise<(typeof db.invoices)[number] | null> {
   const inv = await getInvoiceById(id);
   if (!inv || inv.status === "Paid") return null;
-  const items = [...inv.items, item];
-  const totals = billTotals(items, inv.discount);
-  const balanceDue = totals.totalAmount - inv.paidAmount;
   if (!isDbReady()) {
-    Object.assign(inv, { items, ...totals, balanceDue });
+    const items = [...inv.items, item];
+    const totals = billTotals(items, inv.discount);
+    Object.assign(inv, { items, ...totals, balanceDue: totals.totalAmount - inv.paidAmount });
     return inv;
   }
-  const doc = await InvoiceModel.findOneAndUpdate(
-    { id },
-    { items, ...totals, balanceDue },
-    { new: true },
-  ).lean();
-  return (doc as unknown as (typeof db.invoices)[number]) ?? null;
+  // Optimistic locking on __v: concurrent appends retry instead of dropping items.
+  // Totals stay exact (JS paise math) — no float drift from pipeline rounding modes.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const fresh = await getInvoiceById(id);
+    if (!fresh || fresh.status === "Paid") return null;
+    const items = [...fresh.items, item];
+    const totals = billTotals(items, fresh.discount);
+    const balanceDue = totals.totalAmount - fresh.paidAmount;
+    const version = (fresh as unknown as { __v?: number }).__v;
+    const doc = await InvoiceModel.findOneAndUpdate(
+      { id, __v: version },
+      { items, ...totals, balanceDue, $inc: { __v: 1 } },
+      { new: true },
+    ).lean();
+    if (doc) return doc as unknown as (typeof db.invoices)[number];
+  }
+  const { ApiError } = await import("../errors.js");
+  throw ApiError.conflict("Concurrent update, please retry");
 }
 
 export async function collectInvoice(
@@ -137,18 +148,26 @@ export async function collectInvoice(
     inv.status = inv.balanceDue === 0 ? "Paid" : "Partial";
     return inv;
   }
-  // Atomic guarded increment — concurrent collects can never overshoot
-  const inv = await InvoiceModel.findOneAndUpdate(
+  // Single atomic pipeline — money movement and status flip in one write.
+  // balanceDue rounded to paise so the Paid check is exact (no float drift).
+  // NOTE: native collection call — this Mongoose version gates pipeline updates
+  // on queries, and the driver supports them directly.
+  const doc = await InvoiceModel.collection.findOneAndUpdate(
     { id, balanceDue: { $gte: amount } },
-    { $inc: { paidAmount: amount, balanceDue: -amount } },
-    { new: true },
-  ).lean();
-  if (!inv) return null;
-  const obj = inv as unknown as (typeof db.invoices)[number];
-  const status = obj.balanceDue === 0 ? "Paid" : ("Partial" as const);
-  if (obj.status !== status) {
-    const updated = await InvoiceModel.findOneAndUpdate({ id }, { status }, { new: true }).lean();
-    return (updated as unknown as (typeof db.invoices)[number]) ?? obj;
-  }
-  return obj;
+    [
+      {
+        $set: {
+          paidAmount: { $add: ["$paidAmount", amount] },
+          balanceDue: { $round: [{ $subtract: ["$balanceDue", amount] }, 2] },
+        },
+      },
+      {
+        $set: {
+          status: { $cond: [{ $eq: ["$balanceDue", 0] }, "Paid", "Partial"] },
+        },
+      },
+    ],
+    { returnDocument: "after" },
+  );
+  return (doc as unknown as (typeof db.invoices)[number]) ?? null;
 }
