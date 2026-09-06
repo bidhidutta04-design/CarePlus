@@ -36,6 +36,9 @@ export default function TeamPage() {
   const adminReset = useAdminResetPassword();
   const [modalOpen, setModalOpen] = useState(false);
   const [tempPass, setTempPass] = useState<string | null>(null);
+  // Standalone receipt for row-level resets — previously the password was
+  // written to tempPass while only the create-dialog could display it.
+  const [resetReceipt, setResetReceipt] = useState<{ email: string; temp: string } | null>(null);
   const [error, setError] = useState("");
   const { register, handleSubmit, reset, formState: { errors } } = useForm<Form>({
     resolver: zodResolver(schema),
@@ -61,10 +64,10 @@ export default function TeamPage() {
   };
 
   const issueTemp = (email: string): void => {
-    setTempPass(null);
+    setResetReceipt(null);
     setError("");
     adminReset.mutate(email, {
-      onSuccess: (r) => setTempPass(r.tempPassword),
+      onSuccess: (r) => setResetReceipt({ email, temp: r.tempPassword }),
       onError: (e) => setError(getApiErrorMessage(e)),
     });
   };
@@ -190,6 +193,20 @@ export default function TeamPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={resetReceipt !== null} onOpenChange={(o) => { if (!o) setResetReceipt(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Temporary password issued</DialogTitle></DialogHeader>
+          <p className="rounded-xl bg-[#e6f5e8] p-3 text-sm text-[#2e7d32]">
+            One-time temporary password for <span className="font-semibold">{resetReceipt?.email}</span>:{" "}
+            <span className="font-mono font-bold">{resetReceipt?.temp}</span>
+            <br />Share it securely — it is never shown again, and the staff member must replace it at first sign-in.
+          </p>
+          <DialogFooter>
+            <Button type="button" onClick={() => setResetReceipt(null)}>Done</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
