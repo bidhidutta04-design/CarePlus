@@ -450,6 +450,14 @@
             "description": "list"
           }
         }
+      },
+      "post": {
+        "summary": "Create doctor (Admin)",
+        "responses": {
+          "201": {
+            "description": "created"
+          }
+        }
       }
     },
     "/api/v1/departments": {
