@@ -24,16 +24,16 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    switchRole(state, action: PayloadAction<RoleType>) {
-      state.role = action.payload;
-      state.userName = roleNames[action.payload];
-    },
     loginSuccess(state, action: PayloadAction<{ role: RoleType; userName: string }>) {
       state.role = action.payload.role;
       state.userName = action.payload.userName || roleNames[action.payload.role];
     },
+    logout(state) {
+      state.role = "Admin";
+      state.userName = "";
+    },
   },
 });
 
-export const { switchRole, loginSuccess } = authSlice.actions;
+export const { loginSuccess, logout } = authSlice.actions;
 export default authSlice.reducer;

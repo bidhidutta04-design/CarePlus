@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { usePatients } from "@/hooks/usePatients";
 import { useCreateAppointment } from "@/hooks/useAppointments";
 import { useDoctors } from "@/hooks/useDoctors";
+import { buildSlots, useHospitalSettings } from "@/hooks/useHospitalSettings";
 
 const schema = z.object({
   patientId: z.string().min(1, "Select a patient"),
@@ -22,14 +23,14 @@ const schema = z.object({
 
 type Form = z.infer<typeof schema>;
 
-const SLOTS = ["09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "02:00 PM", "02:30 PM"];
-
 export function BookAppointmentModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { data: patientsData } = usePatients();
   const patients = patientsData?.data ?? [];
   const { data: doctorsData } = useDoctors();
   const doctors = doctorsData?.data ?? [];
   const createAppointment = useCreateAppointment();
+  const { settings } = useHospitalSettings();
+  const SLOTS = buildSlots(settings.slotMinutes);
   const today = new Date().toISOString().slice(0, 10);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<Form>({

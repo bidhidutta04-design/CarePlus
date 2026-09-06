@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { memo, useMemo } from "react";
 import { cn } from "@/lib/utils";
@@ -9,11 +9,8 @@ import {
   FlaskConical, Boxes, IdCard, ChartLine, Settings, Phone,
   ChevronLeft, ChevronRight, X,
 } from "lucide-react";
-import { useAppSelector, useAppDispatch } from "@/store/hooks";
-import { switchRole } from "@/store/authSlice";
+import { useAppSelector } from "@/store/hooks";
 import type { RoleType } from "@/types/common";
-import { setRoleCookie } from "@/lib/apiClient";
-import { homeFor } from "@/lib/roles";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useMedicines } from "@/hooks/usePharmacy";
 import { useLabReports } from "@/hooks/useLab";
@@ -62,10 +59,8 @@ function SidebarInner({
   onCloseMobile: () => void;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
   const role = useAppSelector((s) => s.auth.role);
   const userName = useAppSelector((s) => s.auth.userName);
-  const dispatch = useAppDispatch();
   const { data: appointmentsData } = useAppointments();
   const { data: medicinesData } = useMedicines();
   const { data: labsData } = useLabReports();
@@ -164,27 +159,9 @@ function SidebarInner({
           <div className={cn("border-t border-white/10 p-4", collapsed && "flex justify-center")}>
             {!collapsed ? (
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-xs text-white/60">
-                  <span>Current Role</span>
-                  <select
-                    className="rounded-lg border border-white/20 bg-white/10 px-2 py-1 text-xs text-white focus:outline-none focus:ring-2 focus:ring-accent"
-                    value={role}
-                    onChange={(e) => {
-                      const next = e.target.value as RoleType;
-                      dispatch(switchRole(next));
-                      setRoleCookie(next);
-                      router.push(homeFor(next));
-                      onCloseMobile();
-                    }}
-                    aria-label="Switch role"
-                  >
-                    <option value="Admin">Administrator</option>
-                    <option value="Doctor">Doctor</option>
-                    <option value="Nurse">Nurse</option>
-                    <option value="Pharmacist">Pharmacist</option>
-                    <option value="LabTech">Lab Tech</option>
-                    <option value="Cashier">Cashier</option>
-                  </select>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-white/60">Signed in as</span>
+                  <span className="font-semibold text-white">{role}</span>
                 </div>
                 <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3">
                   <Phone className="h-5 w-5 text-accent" aria-hidden="true" />

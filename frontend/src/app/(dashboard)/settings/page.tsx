@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { useTheme } from "next-themes";
 import { useAppSelector } from "@/store/hooks";
 import { useAuditLogs } from "@/hooks/useAudit";
+import { useHospitalSettings, type HospitalSettings } from "@/hooks/useHospitalSettings";
 import { Lock } from "lucide-react";
 
 export default function SettingsPage() {
@@ -17,9 +18,42 @@ export default function SettingsPage() {
   const role = useAppSelector((s) => s.auth.role);
   const { data: auditData, isLoading: auditLoading } = useAuditLogs();
   const auditLogs = auditData?.data ?? [];
-  const [name, setName] = useState("CarePlus Multi-Speciality Hospital");
-  const [slot, setSlot] = useState(30);
+  const { settings, saveSettings } = useHospitalSettings();
+  const [name, setName] = useState(settings.hospitalName);
+  const [slot, setSlot] = useState<number>(settings.slotMinutes);
+  const [phone, setPhone] = useState(settings.contactPhone);
+  const [phoneHref, setPhoneHref] = useState(settings.contactPhoneHref);
+  const [address, setAddress] = useState(settings.address);
+  const [opdNote, setOpdNote] = useState(settings.opdHoursNote);
   const [saved, setSaved] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    setName(settings.hospitalName);
+    setSlot(settings.slotMinutes);
+    setPhone(settings.contactPhone);
+    setPhoneHref(settings.contactPhoneHref);
+    setAddress(settings.address);
+    setOpdNote(settings.opdHoursNote);
+  }, [settings]);
+
+  const markDirty = (): void => setDirty(true);
+
+  const onSave = (): void => {
+    const trimmed = name.trim();
+    if (trimmed.length === 0 || slot < 10 || slot > 60) return;
+    saveSettings({
+      hospitalName: trimmed,
+      slotMinutes: (Math.round(slot / 5) * 5) as HospitalSettings["slotMinutes"],
+      contactPhone: phone.trim(),
+      contactPhoneHref: phoneHref.trim(),
+      address: address.trim(),
+      opdHoursNote: opdNote.trim() || settings.opdHoursNote,
+    });
+    setDirty(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
 
   return (
     <div>
@@ -29,11 +63,25 @@ export default function SettingsPage() {
           <CardHeader><CardTitle>Hospital profile</CardTitle></CardHeader>
           <CardContent className="grid gap-3">
             <label className="grid gap-1 text-sm">Hospital name
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
+              <Input value={name} onChange={(e) => { setName(e.target.value); markDirty(); }} />
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="grid gap-1 text-sm">Public contact number
+                <Input value={phone} placeholder="e.g. +1 (987) 765 4320" onChange={(e) => { setPhone(e.target.value); markDirty(); }} />
+              </label>
+              <label className="grid gap-1 text-sm">Dial code (digits)
+                <Input value={phoneHref} placeholder="e.g. 19877654320" onChange={(e) => { setPhoneHref(e.target.value.replace(/[^\d+]/g, "")); markDirty(); }} />
+              </label>
+            </div>
+            <label className="grid gap-1 text-sm">Public address
+              <Input value={address} placeholder="Shown in the landing footer when set" onChange={(e) => { setAddress(e.target.value); markDirty(); }} />
+            </label>
+            <label className="grid gap-1 text-sm">OPD hours note
+              <Input value={opdNote} onChange={(e) => { setOpdNote(e.target.value); markDirty(); }} />
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="grid gap-1 text-sm">OPD slot interval (min)
-                <Input type="number" min={10} max={60} step={5} value={slot} onChange={(e) => setSlot(Number(e.target.value))} />
+                <Input type="number" min={10} max={60} step={5} value={slot} onChange={(e) => { setSlot(Number(e.target.value)); setDirty(true); }} />
               </label>
               <div className="grid gap-1 text-sm">Theme
                 <div className="flex items-center gap-2 rounded-lg border px-3 py-2">
@@ -42,9 +90,9 @@ export default function SettingsPage() {
                 </div>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">Signed in as {role}. Slot interval applies to new bookings.</p>
+            <p className="text-xs text-muted-foreground">Signed in as {role}. Saved on this device; the slot interval drives the booking slot picker.</p>
             <div>
-              <Button size="sm" onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 2000); }}>Save profile</Button>
+              <Button size="sm" onClick={onSave} disabled={!dirty}>Save profile</Button>
               {saved && <span className="ml-2 text-sm text-green-700">Saved.</span>}
             </div>
           </CardContent>

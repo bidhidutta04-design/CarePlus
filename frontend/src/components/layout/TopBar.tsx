@@ -43,13 +43,14 @@ import {
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
-import { switchRole } from "@/store/authSlice";
+import { logout } from "@/store/authSlice";
 import type { RoleType } from "@/types/common";
 import { usePatients } from "@/hooks/usePatients";
 import { useDoctors } from "@/hooks/useDoctors";
 import { useAppointments } from "@/hooks/useAppointments";
-import { clearSession, setRoleCookie } from "@/lib/apiClient";
-import { homeFor } from "@/lib/roles";
+import { useLabReports } from "@/hooks/useLab";
+import { useMedicines } from "@/hooks/usePharmacy";
+import { clearSession } from "@/lib/apiClient";
 
 const ROLES: Array<{ value: RoleType; label: string; icon: typeof Users }> = [
   { value: "Admin", label: "Hospital Administrator", icon: LayoutDashboard },
@@ -60,14 +61,82 @@ const ROLES: Array<{ value: RoleType; label: string; icon: typeof Users }> = [
   { value: "Cashier", label: "Billing Cashier", icon: FileText },
 ];
 
-const NOTIFICATIONS = [
-  { id: 1, type: "critical", title: "Critical Lab Value", desc: "LAB-2002: Total Cholesterol 248 mg/dL (High)", time: "2 min ago", icon: AlertTriangle, color: "text-red-600 bg-red-500/10" },
-  { id: 2, type: "critical", title: "Critical Lab Value", desc: "LAB-2005: Creatinine 1.9 mg/dL (High)", time: "5 min ago", icon: AlertTriangle, color: "text-red-600 bg-red-500/10" },
-  { id: 3, type: "warning", title: "Low Stock Alert", desc: "Crocin 500: 42 units (Min: 50)", time: "10 min ago", icon: Package, color: "text-amber-700 bg-amber-500/10" },
-  { id: 4, type: "warning", title: "Low Stock Alert", desc: "Telma 40: 28 units (Min: 50)", time: "12 min ago", icon: Package, color: "text-amber-700 bg-amber-500/10" },
-  { id: 5, type: "info", title: "Emergency Admission", desc: "Vikram Mehta admitted to ICU-01", time: "15 min ago", icon: Zap, color: "text-blue-700 bg-blue-500/10" },
-  { id: 6, type: "info", title: "Lab Report Ready", desc: "LAB-2001 CBC approved for Rahul Sharma", time: "20 min ago", icon: FlaskConical, color: "text-green-700 bg-green-500/10" },
-];
+interface LiveNotification {
+  id: string;
+  type: "critical" | "warning" | "info";
+  title: string;
+  desc: string;
+  time: string;
+  icon: typeof AlertTriangle;
+  color: string;
+}
+
+function useLiveNotifications(): LiveNotification[] {
+  const { data: labsData } = useLabReports();
+  const { data: medicinesData } = useMedicines();
+  const { data: appointmentsData } = useAppointments();
+
+  const notes: LiveNotification[] = [];
+
+  for (const lab of labsData?.data ?? []) {
+    const abnormal = lab.results.filter((r) => r.isAbnormal);
+    for (const r of abnormal) {
+      notes.push({
+        id: `${lab.id}-${r.parameter}`,
+        type: "critical",
+        title: "Critical Lab Value",
+        desc: `${lab.id}: ${r.parameter} ${r.value} ${r.unit} (ref ${r.normalRange})`,
+        time: lab.orderDate,
+        icon: AlertTriangle,
+        color: "text-red-600 bg-red-500/10",
+      });
+    }
+    if (lab.status === "Report Approved") {
+      notes.push({
+        id: `${lab.id}-ready`,
+        type: "info",
+        title: "Lab Report Ready",
+        desc: `${lab.testName} approved for ${lab.patientName}`,
+        time: lab.orderDate,
+        icon: FlaskConical,
+        color: "text-green-700 bg-green-500/10",
+      });
+    }
+  }
+
+  for (const med of medicinesData?.data ?? []) {
+    if (med.status === "Low Stock" || med.status === "Expired") {
+      notes.push({
+        id: med.id,
+        type: med.status === "Expired" ? "critical" : "warning",
+        title: med.status === "Expired" ? "Batch Expired" : "Low Stock Alert",
+        desc: `${med.brandName}: ${med.stockCount} units (Min: ${med.minThreshold})`,
+        time: med.expiryDate,
+        icon: Package,
+        color:
+          med.status === "Expired"
+            ? "text-red-600 bg-red-500/10"
+            : "text-amber-700 bg-amber-500/10",
+      });
+    }
+  }
+
+  for (const appt of appointmentsData?.data ?? []) {
+    if (appt.priority === "Emergency" && appt.status !== "Completed" && appt.status !== "Cancelled") {
+      notes.push({
+        id: appt.id,
+        type: "info",
+        title: "Emergency Token",
+        desc: `${appt.patientName} • ${appt.department} • ${appt.timeSlot}`,
+        time: appt.date,
+        icon: Zap,
+        color: "text-blue-700 bg-blue-500/10",
+      });
+    }
+  }
+
+  return notes.slice(0, 20);
+}
 
 function LiveClock() {
   const [clock, setClock] = useState("--:--:--");
@@ -104,6 +173,9 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
     .filter((d) => !q || `${d.name} ${d.id} ${d.department}`.toLowerCase().includes(q))
     .slice(0, 4);
   const foundAppointments = (appointmentsData?.data ?? []).slice(0, 4);
+  const notifications = useLiveNotifications();
+  const unreadCount = notifRead ? 0 : notifications.length;
+  const criticalCount = notifications.filter((n) => n.type === "critical").length;
   const role = useAppSelector((s) => s.auth.role);
   const userName = useAppSelector((s) => s.auth.userName);
   const dispatch = useAppDispatch();
@@ -201,10 +273,12 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
           </PopoverContent>
         </Popover>
 
-        <div className="hidden items-center gap-2 rounded-full bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-700 xl:flex">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-red-600" />
-          Emergency: 1 critical • ICU 75% occupied
-        </div>
+        {criticalCount > 0 && (
+          <div className="hidden items-center gap-2 rounded-full bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-700 xl:flex">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-red-600" />
+            {criticalCount} critical alert{criticalCount === 1 ? "" : "s"} • {notifications.length} total
+          </div>
+        )}
 
         <div className="flex-1" />
 
@@ -212,10 +286,10 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
 
         <Popover open={notifOpen} onOpenChange={setNotifOpen}>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative h-10 w-10" aria-label="Notifications">
-              <Bell className="h-5 w-5 text-muted-foreground" />
-              {!notifRead && <span className="absolute right-1.5 top-1.5 h-2 w-2 animate-pulse rounded-full bg-red-500" />}
-            </Button>
+              <Button variant="ghost" size="icon" className="relative h-10 w-10" aria-label="Notifications">
+                <Bell className="h-5 w-5 text-muted-foreground" />
+                {unreadCount > 0 && <span className="absolute right-1.5 top-1.5 h-2 w-2 animate-pulse rounded-full bg-red-500" />}
+              </Button>
           </PopoverTrigger>
           <PopoverContent side="bottom" align="end" className="w-96 p-0">
             <div className="flex items-center justify-between border-b p-4">
@@ -225,7 +299,10 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
               </Button>
             </div>
             <div className="max-h-96 overflow-y-auto">
-              {NOTIFICATIONS.map((n) => (
+              {notifications.length === 0 && (
+                <p className="p-4 text-center text-sm text-muted-foreground">No alerts right now.</p>
+              )}
+              {notifications.map((n) => (
                 <div
                   key={n.id}
                   className={cn(
@@ -272,23 +349,6 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
               <p className="text-xs text-muted-foreground">{currentRole.label}</p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-xs uppercase tracking-wide">Switch role</DropdownMenuLabel>
-            {ROLES.map((r) => (
-              <DropdownMenuItem
-                key={r.value}
-                onSelect={() => {
-                  dispatch(switchRole(r.value));
-                  setRoleCookie(r.value);
-                  router.push(homeFor(r.value));
-                }}
-                className={cn(role === r.value && "bg-clinical/10 text-clinical")}
-              >
-                <r.icon className="mr-2 h-4 w-4" />
-                {r.label}
-                {role === r.value && <span className="ml-auto text-xs">Active</span>}
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => setTheme(theme === "dark" ? "light" : "dark")}>
               {theme === "dark" ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
               {theme === "dark" ? "Light mode" : "Dark mode"}
@@ -299,6 +359,7 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
             </DropdownMenuItem>
             <DropdownMenuItem className="text-destructive" onSelect={() => {
               clearSession();
+              dispatch(logout());
               router.push("/login");
             }}>
               <LogOut className="mr-2 h-4 w-4" />
