@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAppDispatch } from "@/store/hooks";
 import { loginSuccess } from "@/store/authSlice";
-import { apiClient, setSession } from "@/lib/apiClient";
+import { apiClient, getApiErrorMessage, setSession } from "@/lib/apiClient";
 import { HeartPulse } from "lucide-react";
 import type { RoleType } from "@/types/common";
 
@@ -26,21 +26,37 @@ export default function LoginPage() {
   const dispatch = useAppDispatch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const validate = (): boolean => {
+    const next: { email?: string; password?: string } = {};
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      next.email = "Enter a valid email address (e.g. admin@careplus.local).";
+    }
+    if (password.length < 8) {
+      next.password = "Password must be at least 8 characters.";
+    }
+    setFieldErrors(next);
+    return Object.keys(next).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setError("");
+    if (!validate()) return;
     setLoading(true);
     try {
-      const { data } = await apiClient.post<LoginResponse>("/auth/login", { email, password });
+      const { data } = await apiClient.post<LoginResponse>("/auth/login", {
+        email: email.trim(),
+        password,
+      });
       setSession(data.data.token, data.data.refreshToken);
       dispatch(loginSuccess({ role: data.data.role as RoleType, userName: data.data.name }));
       router.push("/");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Login failed";
-      setError(msg);
+      setError(getApiErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -67,18 +83,26 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
+              {fieldErrors.email && <span className="text-xs text-red-600">{fieldErrors.email}</span>}
             </label>
             <label className="grid gap-1 text-sm">
               Password
               <Input
                 type="password"
-                placeholder="Enter password"
+                placeholder="Minimum 8 characters"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              {fieldErrors.password && (
+                <span className="text-xs text-red-600">{fieldErrors.password}</span>
+              )}
             </label>
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && (
+              <p role="alert" className="text-sm text-red-600">
+                {error}
+              </p>
+            )}
             <Button type="submit" disabled={loading}>
               {loading ? "Signing in…" : "Sign in"}
             </Button>

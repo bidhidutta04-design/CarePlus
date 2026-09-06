@@ -72,10 +72,55 @@ interface RetryableConfig extends InternalAxiosRequestConfig {
   _retried?: boolean;
 }
 
+function isAuthRequest(config: RetryableConfig | undefined): boolean {
+  return !!config?.url?.includes("/auth/");
+}
+
+export function getApiErrorMessage(err: unknown): string {
+  if (!axios.isAxiosError(err)) {
+    return err instanceof Error ? err.message : "Something went wrong. Please try again.";
+  }
+  const status = err.response?.status;
+  if (err.code === "ECONNABORTED") {
+    return "Request timed out. Please check your connection and try again.";
+  }
+  if (!err.response) {
+    return "Cannot reach the server. Please make sure the backend is running and try again.";
+  }
+  const serverMsg = (err.response.data as { error?: { message?: string } } | undefined)?.error
+    ?.message;
+  switch (status) {
+    case 400:
+      return serverMsg ?? "Invalid request. Please check the highlighted fields.";
+    case 401:
+      return "Invalid email or password. Please try again.";
+    case 403:
+      return "You do not have permission to perform this action.";
+    case 404:
+      return serverMsg ?? "Requested record was not found.";
+    case 409:
+      return serverMsg ?? "This conflicts with existing data. Please review and retry.";
+    case 422:
+      return serverMsg ?? "Some fields need attention. Please review and retry.";
+    case 429:
+      return "Too many attempts. Please wait a minute and try again.";
+    default:
+      if (status && status >= 500) {
+        return "Server error. Please try again in a moment.";
+      }
+      return serverMsg ?? "Something went wrong. Please try again.";
+  }
+}
+
 apiClient.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
     const config = error.config as RetryableConfig | undefined;
+    // Never refresh or redirect for auth endpoints themselves (login page):
+    // a failed login must surface its error instead of reloading the page.
+    if (isAuthRequest(config)) {
+      return Promise.reject(error);
+    }
     if (error?.response?.status === 401 && config && !config._retried) {
       config._retried = true;
       try {
