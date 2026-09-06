@@ -41,6 +41,13 @@ npm run dev:backend
 npm run dev:frontend
 ```
 
+### Accessing in the Browser
+
+Once the servers are running, you can open your browser and navigate to:
+- **Frontend App**: [http://localhost:3000](http://localhost:3000)
+- **Backend API Docs (Swagger)**: [http://localhost:4000/docs](http://localhost:4000/docs)
+
+
 Backend needs env: copy `backend/.env.example` → `backend/.env` and set `JWT_SECRET`
 (min 32 chars) and `MONGODB_URI` (default `mongodb://127.0.0.1:27017/careplus`).
 Frontend API base: `frontend/.env.example` → `NEXT_PUBLIC_API_URL`.
