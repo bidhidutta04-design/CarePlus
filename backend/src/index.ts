@@ -1,7 +1,7 @@
 import { createApp } from "./app.js";
 import { config } from "./config.js";
 import { connectDB, disconnectDB } from "./db.js";
-import { logger } from "./logger.js";
+import { formatError, logger } from "./logger.js";
 
 async function main(): Promise<void> {
   if (process.env.NODE_ENV !== "test") {
@@ -30,11 +30,11 @@ async function main(): Promise<void> {
   process.on("SIGTERM", () => void shutdown());
   // Fail fast — a process with indeterminate state must restart clean, not limp on
   process.on("unhandledRejection", (reason) => {
-    logger.error({ reason }, "unhandledRejection — exiting");
+    logger.error({ err: formatError(reason) }, "unhandledRejection — exiting");
     void disconnectDB().finally(() => process.exit(1));
   });
   process.on("uncaughtException", (err) => {
-    logger.error({ err }, "uncaughtException — exiting");
+    logger.error({ err: formatError(err) }, "uncaughtException — exiting");
     void disconnectDB().finally(() => process.exit(1));
   });
 }

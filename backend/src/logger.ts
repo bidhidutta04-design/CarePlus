@@ -6,3 +6,21 @@ export const logger: Logger = pino({
   base: { service: "careplus-api" },
   timestamp: pino.stdTimeFunctions.isoTime,
 });
+
+// Trimmed error shape for logs — passing raw Mongoose/Axios errors to pino
+// dumps kilobytes of topology/config internals into a single terminal line.
+export function formatError(err: unknown): {
+  name: string;
+  message: string;
+  code?: string | number;
+} {
+  if (err instanceof Error) {
+    const withCode = err as Error & { code?: string | number };
+    return {
+      name: err.name,
+      message: err.message.split("\n")[0].slice(0, 300),
+      ...(withCode.code !== undefined ? { code: withCode.code } : {}),
+    };
+  }
+  return { name: "UnknownError", message: String(err).slice(0, 300) };
+}

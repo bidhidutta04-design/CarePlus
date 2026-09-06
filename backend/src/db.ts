@@ -1,7 +1,7 @@
 import dns from "node:dns";
 import mongoose from "mongoose";
 import { config } from "./config.js";
-import { logger } from "./logger.js";
+import { formatError, logger } from "./logger.js";
 
 let connecting: Promise<typeof mongoose> | null = null;
 
@@ -34,12 +34,12 @@ export async function connectDB(uri: string = config.mongoUri): Promise<typeof m
     })
     .catch((err: unknown) => {
       connecting = null;
-      logger.error({ err }, "mongo connection failed");
+      logger.error({ err: formatError(err) }, "mongo connection failed");
       throw err;
     });
 
   mongoose.connection.on("error", (err) => {
-    logger.error({ err }, "mongo error");
+    logger.error({ err: formatError(err) }, "mongo error");
   });
 
   mongoose.connection.on("disconnected", () => {

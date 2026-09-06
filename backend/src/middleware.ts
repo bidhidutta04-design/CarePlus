@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { config } from "./config.js";
 import { ApiError } from "./errors.js";
-import { logger } from "./logger.js";
+import { formatError, logger } from "./logger.js";
 import rateLimit from "express-rate-limit";
 
 export interface AuthUser {
@@ -146,10 +146,7 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   }
 
   // Unknown — structured log with requestId, hide details in prod
-  logger.error(
-    { requestId, err: anyErr?.message ?? String(err), stack: (err as Error)?.stack },
-    "unhandled error",
-  );
+  logger.error({ requestId, err: formatError(err) }, "unhandled error");
 
   res.status(500).json({
     error: {

@@ -31,7 +31,16 @@ export function createApp(): express.Express {
   app.use(express.json({ limit: "100kb" }));
   app.use(cookieParser() as unknown as import("express").RequestHandler);
   app.use(requestId);
-  app.use(morgan(config.isProd ? "combined" : "dev"));
+  app.use(
+    morgan(config.isProd ? "combined" : "dev", {
+      // Skip probe + docs traffic so request logs stay readable
+      skip: (req) =>
+        req.path === "/health" ||
+        req.path === "/ready" ||
+        req.path === "/docs" ||
+        req.path.endsWith("openapi.json"),
+    }),
+  );
 
   // Liveness — process is alive (orchestrator restart probe)
   app.get("/health", (_req, res) => {
