@@ -9,7 +9,9 @@ async function main(): Promise<void> {
     // (Previously awaited here: with an unreachable DB the 5s driver timeout
     // delayed listen and broke health-gated CI steps with curl exit 7.)
     connectDB().catch(() => {
-      logger.warn("api starting without db — set MONGODB_URI and restart for persistence");
+      // Logged + retried with backoff inside connectDB; the API serves
+      // requests meanwhile and /ready reports 503 until mongo is back.
+      logger.warn("api accepting requests while mongo reconnects in the background");
     });
   }
 
