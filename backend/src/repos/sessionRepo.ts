@@ -63,9 +63,6 @@ export async function findSessionByToken(refreshToken: string): Promise<{
   return (doc as unknown as (typeof memorySessions)[number]) ?? null;
 }
 
-// Legacy alias for backward compat
-export const findSession = findSessionByToken;
-
 export async function rotateSession(
   oldHash: string,
   newData: { refreshToken: string; expiresAt: Date },

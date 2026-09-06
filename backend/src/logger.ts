@@ -6,7 +6,3 @@ export const logger: Logger = pino({
   base: { service: "careplus-api" },
   timestamp: pino.stdTimeFunctions.isoTime,
 });
-
-export function childLogger(requestId?: string): Logger {
-  return requestId ? logger.child({ requestId }) : logger;
-}
