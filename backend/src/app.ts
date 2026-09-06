@@ -28,10 +28,22 @@ export function createApp(): express.Express {
   const app = express();
 
   app.use(helmet());
-  // Local loopback aliases included so the app works whether the browser
-  // uses localhost or 127.0.0.1 (otherwise the browser blocks API calls).
-  const allowedOrigins = [config.frontendUrl, "http://localhost:3000", "http://127.0.0.1:3000"];
-  app.use(cors({ origin: allowedOrigins, credentials: true }));
+  // Local loopback on any port is allowed so the browser can call the API
+  // whether the frontend runs on :3000, an auto-bumped :3001, localhost or
+  // 127.0.0.1 (otherwise the browser blocks API calls). Loopback is not
+  // reachable from other machines, so this is safe; production browsers use
+  // config.frontendUrl.
+  const allowedOrigins = [config.frontendUrl];
+  const loopback = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+  app.use(
+    cors({
+      origin: (origin, cb) => {
+        if (!origin || allowedOrigins.includes(origin) || loopback.test(origin)) cb(null, true);
+        else cb(new Error(`CORS blocked for origin ${origin}`));
+      },
+      credentials: true,
+    }),
+  );
   app.use(compression() as unknown as import("express").RequestHandler);
   app.use(express.json({ limit: "100kb" }));
   app.use(cookieParser() as unknown as import("express").RequestHandler);
