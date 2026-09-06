@@ -54,8 +54,17 @@ export default function LoginPage() {
       });
       setSession(data.data.token, data.data.refreshToken);
       dispatch(loginSuccess({ role: data.data.role as RoleType, userName: data.data.name }));
-      router.push("/");
+      router.push("/dashboard");
     } catch (err: unknown) {
+      const code =
+        err !== null && typeof err === "object" && "response" in err
+          ? (err as { response?: { data?: { error?: { code?: string } } } }).response?.data?.error
+              ?.code
+          : undefined;
+      if (code === "PASSWORD_CHANGE_REQUIRED") {
+        router.push(`/change-password?email=${encodeURIComponent(email.trim())}`);
+        return;
+      }
       setError(getApiErrorMessage(err));
     } finally {
       setLoading(false);
@@ -107,6 +116,14 @@ export default function LoginPage() {
               {loading ? "Signing in…" : "Sign in"}
             </Button>
           </form>
+          <div className="flex items-center justify-between text-sm">
+            <a href="/forgot-password" className="text-clinical hover:underline">
+              Forgot password?
+            </a>
+            <a href="/portal" className="text-muted-foreground hover:underline">
+              Staff portal
+            </a>
+          </div>
 
         </CardContent>
       </Card>

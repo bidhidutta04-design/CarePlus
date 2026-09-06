@@ -16,8 +16,15 @@ import { useAppointments } from "@/hooks/useAppointments";
 import { useMedicines } from "@/hooks/usePharmacy";
 import { useLabReports } from "@/hooks/useLab";
 
-const NAV_ITEMS: Array<{ href: string; label: string; icon: typeof HeartPulse; badge: BadgeType; live?: boolean }> = [
-  { href: "/", label: "Dashboard", icon: HeartPulse, badge: null },
+const NAV_ITEMS: Array<{
+  href: string;
+  label: string;
+  icon: typeof HeartPulse;
+  badge: BadgeType;
+  live?: boolean;
+  adminOnly?: boolean;
+}> = [
+  { href: "/dashboard", label: "Dashboard", icon: HeartPulse, badge: null },
   { href: "/appointments", label: "Appointments", icon: Users, badge: "appointments" },
   { href: "/patients", label: "Patients", icon: Users, badge: null },
   { href: "/doctors", label: "Doctors", icon: UserRound, badge: null },
@@ -28,6 +35,7 @@ const NAV_ITEMS: Array<{ href: string; label: string; icon: typeof HeartPulse; b
   { href: "/lab-reports", label: "Lab Reports", icon: FlaskConical, badge: "pending" },
   { href: "/inventory", label: "Inventory", icon: Boxes, badge: null },
   { href: "/staff", label: "Staff", icon: IdCard, badge: null },
+  { href: "/team", label: "Team Accounts", icon: Users, badge: null, adminOnly: true },
   { href: "/reports", label: "Reports", icon: ChartLine, badge: null },
   { href: "/settings", label: "Settings", icon: Settings, badge: null },
 ];
@@ -105,7 +113,7 @@ function SidebarInner({
           </div>
 
           <nav className="flex-1 space-y-1 overflow-y-auto p-3" aria-label="Sidebar navigation">
-            {NAV_ITEMS.map((item) => {
+            {NAV_ITEMS.filter((item) => !item.adminOnly || role === "Admin").map((item) => {
               const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
               const count = item.badge === null ? null : counts[item.badge];
               const Icon = item.icon;
