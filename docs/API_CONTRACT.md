@@ -3,7 +3,9 @@
 > Source of truth is `GET /api/openapi.json` (also served at `/docs/openapi.json` and browsable at `/docs`).  
 > This file records the frozen contract for the frontend team. Any breaking change must bump the version below and be reviewed.
 
-## Version: 2.1.0 (2026-09-06) — staff provisioning, recovery, public content
+## Version: 2.2.0 (2026-09-06) — first-login endpoint split, dashboard moved to `/dashboard`
+
+## Previous: Version 2.1.0 (2026-09-06) — staff provisioning, recovery, public content
 
 ## Previous: Version 2.0.0 (2026-09-05) — all routes moved to `/api/v1` prefix
 
@@ -15,7 +17,7 @@
 - Error: `{ error: { code, message, details, requestId } }`
 - Auth: `Authorization: Bearer <JWT>` (30m expiry). Refresh via `POST /api/auth/refresh` (httpOnly cookie or body). Audit `timestamp` fields are ISO-8601 dates.
 
-### Endpoints (27)
+### Endpoints (38)
 
 | Method | Path                                  | Auth               | Notes                                                                       |
 | ------ | ------------------------------------- | ------------------ | --------------------------------------------------------------------------- |
@@ -35,16 +37,7 @@
 | GET    | `/api/v1/public/departments`          | —                  | marketing-safe fields, strict rate limit                                    |
 | GET    | `/api/v1/public/doctors`              | —                  | marketing-safe fields, strict rate limit                                    |
 | GET    | `/api/v1/public/stats`                | —                  | headline counts only                                                        |
-| POST   | `/api/v1/auth/forgot-password`        | —                  | `{email}` → security question (always 200, no enumeration)                  |
-| POST   | `/api/v1/auth/reset-password`         | —                  | `{email,answer,newPassword}`                                                |
-| POST   | `/api/v1/auth/change-password`        | JWT                | `{currentPassword,newPassword}`, clears forced-change flag                  |
-| GET    | `/api/v1/users`                       | Admin              | paginated staff list, hashes never exposed                                  |
-| POST   | `/api/v1/users`                       | Admin              | provision account → one-time temp password                                  |
-| PATCH  | `/api/v1/users/:email`                | Admin              | activate / deactivate                                                       |
-| POST   | `/api/v1/users/:email/reset-password` | Admin              | admin-issued temp password                                                  |
-| GET    | `/api/v1/public/departments`          | —                  | marketing-safe fields, strict rate limit                                    |
-| GET    | `/api/v1/public/doctors`              | —                  | marketing-safe fields, strict rate limit                                    |
-| GET    | `/api/v1/public/stats`                | —                  | headline counts only                                                        |
+| POST   | `/api/v1/auth/first-password`         | —                  | first-login forced change (`{email,currentPassword,newPassword}`)           |
 | GET    | `/api/v1/patients`                    | JWT                | `?search=&status=&bloodGroup=&page=&limit=&sort=&order=`                    |
 | GET    | `/api/v1/patients/:id`                | JWT                | includes visits, labOrders, bills                                           |
 | POST   | `/api/v1/patients`                    | Admin,Nurse        | Zod-validated                                                               |
@@ -79,6 +72,7 @@ Every list endpoint supports `?page=&limit=&sort=&order=` → `meta: { total, pa
 
 ### Changelog
 
+- **2.2.0** — split first-login change into `POST /auth/first-password` (38 paths).
 - **2.1.0** — staff provisioning + security-question recovery + forced first-login change + public marketing endpoints (37 paths).
 - **2.0.0** — `/api/v1` version prefix on all API routes (breaking: old unversioned paths removed).
 - **1.1.0** — credential login (`{email,password}`, bcrypt users), `/ready` probe, ISO audit timestamps, dispense posts to billing, paise-exact invoice math with discount guard, atomic collect/dispense.

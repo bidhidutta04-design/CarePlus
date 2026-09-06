@@ -77,14 +77,6 @@ export const openApiSpec = {
     "/api/v1/auth/forgot-password": {
       post: {
         summary: "Get security question (enumeration-safe)",
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: { type: "object", properties: { email: { type: "string" } } },
-            },
-          },
-        },
         responses: { "200": { description: "question" } },
         security: [],
       },
@@ -92,50 +84,25 @@ export const openApiSpec = {
     "/api/v1/auth/reset-password": {
       post: {
         summary: "Reset password via security answer",
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                properties: {
-                  email: { type: "string" },
-                  answer: { type: "string" },
-                  newPassword: { type: "string" },
-                },
-              },
-            },
-          },
-        },
         responses: { "200": { description: "reset" } },
         security: [],
       },
     },
     "/api/v1/auth/change-password": {
+      post: { summary: "Change own password", responses: { "200": { description: "changed" } } },
+    },
+    "/api/v1/auth/first-password": {
       post: {
-        summary: "Change own password",
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                properties: {
-                  currentPassword: { type: "string" },
-                  newPassword: { type: "string" },
-                },
-              },
-            },
-          },
-        },
+        summary: "First-login forced password change",
         responses: { "200": { description: "changed" } },
+        security: [],
       },
     },
     "/api/v1/users": {
       get: { summary: "List staff users (Admin)", responses: { "200": { description: "list" } } },
       post: {
         summary: "Provision staff account (Admin)",
-        responses: { "201": { description: "created with temp password" } },
+        responses: { "201": { description: "created" } },
       },
     },
     "/api/v1/users/{email}": {

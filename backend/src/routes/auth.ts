@@ -255,4 +255,38 @@ router.post(
   }),
 );
 
+// POST /api/auth/first-password — first-login forced change (no token yet).
+// Only works on accounts flagged mustChangePassword; knowledge of the
+// temporary password is the authentication for this single purpose.
+router.post(
+  "/first-password",
+  validate(
+    z.object({
+      email: z.string().email().max(120),
+      currentPassword: z.string().min(1).max(128),
+      newPassword: z.string().min(8).max(128),
+    }),
+  ),
+  asyncHandler(async (req, res, next) => {
+    const { email, currentPassword, newPassword } = req.body as {
+      email: string;
+      currentPassword: string;
+      newPassword: string;
+    };
+    const { findUserByEmail } = await import("../repos/userRepo.js");
+    const user = await findUserByEmail(email);
+    if (!user || !user.isActive || !user.mustChangePassword) {
+      next(ApiError.unauthorized("Invalid credentials"));
+      return;
+    }
+    const { changeUserPassword } = await import("../repos/userRepo.js");
+    const result = await changeUserPassword(email, currentPassword, newPassword);
+    if (result !== "ok") {
+      next(ApiError.unauthorized("Invalid credentials"));
+      return;
+    }
+    res.json({ data: { ok: true } });
+  }),
+);
+
 export default router;
