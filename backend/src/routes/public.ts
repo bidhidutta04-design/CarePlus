@@ -1,25 +1,33 @@
 import { Router } from "express";
-import rateLimit from "express-rate-limit";
+import rateLimit, { type RateLimitExceededEventHandler } from "express-rate-limit";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { listDepartments } from "../repos/departmentRepo.js";
 import { listDoctors } from "../repos/doctorRepo.js";
 
 const router = Router();
 
-// Stricter than the auth limiter — this surface is fully public
-const publicLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 60,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
+const tooMany: RateLimitExceededEventHandler = (req, res) => {
+  res.status(429).json({
     error: {
       code: "TOO_MANY_REQUESTS",
       message: "Too many attempts, try again later",
       details: null,
+      requestId: req.requestId,
     },
-  },
-});
+  });
+};
+
+// Stricter than the auth limiter — this surface is fully public
+const publicLimiter =
+  process.env.NODE_ENV === "test"
+    ? (_req: unknown, _res: unknown, next: () => void): void => next()
+    : rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: 60,
+        standardHeaders: true,
+        legacyHeaders: false,
+        handler: tooMany,
+      });
 
 router.use(publicLimiter as unknown as import("express").RequestHandler);
 

@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { config } from "../config.js";
-import { requireAuth, validate } from "../middleware.js";
+import { loginLimiter, refreshLimiter, requireAuth, validate } from "../middleware.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../errors.js";
 import {
@@ -65,10 +65,11 @@ function refreshCookieOptions(maxAgeMs: number): {
 // POST /api/auth/login — credential sign-in against User collection (bcrypt).
 router.post(
   "/login",
+  loginLimiter,
   validate(loginSchema),
   asyncHandler(async (req, res, next) => {
     if (mongoose.connection.readyState !== 1) {
-      next(ApiError.badRequest("Auth service unavailable — database not connected"));
+      next(ApiError.unavailable("Auth service unavailable — database not connected"));
       return;
     }
     const { email, password } = req.body as { email: string; password: string };
@@ -118,6 +119,7 @@ router.post(
 // POST /api/auth/refresh — exchange valid refresh token for new pair (rotation + reuse detection)
 router.post(
   "/refresh",
+  refreshLimiter,
   validate(refreshSchema),
   asyncHandler(async (req, res, next) => {
     const raw =
@@ -169,6 +171,7 @@ router.post(
 // POST /api/auth/logout — revoke refresh token (body or httpOnly cookie)
 router.post(
   "/logout",
+  refreshLimiter,
   validate(refreshSchema),
   asyncHandler(async (req, res) => {
     const raw =
@@ -204,6 +207,7 @@ const changeSchema = z.object({
 // Always 200 (even for unknown emails) so attackers cannot enumerate accounts.
 router.post(
   "/forgot-password",
+  loginLimiter,
   validate(forgotSchema),
   asyncHandler(async (req, res) => {
     const { email } = req.body as { email: string };
@@ -220,6 +224,7 @@ router.post(
 // POST /api/auth/reset-password — verify answer, set new password
 router.post(
   "/reset-password",
+  loginLimiter,
   validate(resetSchema),
   asyncHandler(async (req, res, next) => {
     const { email, answer, newPassword } = req.body as {
@@ -267,6 +272,7 @@ router.post(
 // temporary password is the authentication for this single purpose.
 router.post(
   "/first-password",
+  loginLimiter,
   validate(
     z.object({
       email: z.string().email().max(120),

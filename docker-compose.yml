@@ -21,10 +21,15 @@ services:
       - "4000:4000"
     environment:
       PORT: 4000
+      NODE_ENV: production
       FRONTEND_URL: http://localhost:3000
       MONGODB_URI: mongodb://mongo:27017/careplus
-      JWT_SECRET: change-me-in-production-min-32-chars
-      JWT_EXPIRES_IN: 15m
+      # No default: compose refuses to start without real secrets, so a deploy
+      # can never sign tokens with a publicly known key. Generate with:
+      #   node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET and JWT_ACCESS_SECRET before deploying}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?Set JWT_SECRET and JWT_ACCESS_SECRET before deploying}
+      JWT_EXPIRES_IN: 30m
       JWT_REFRESH_EXPIRES_IN: 7d
     depends_on:
       mongo:

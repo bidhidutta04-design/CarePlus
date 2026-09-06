@@ -6,7 +6,7 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import { config } from "./config.js";
-import { authLimiter, errorHandler, notFound, requestId } from "./middleware.js";
+import { errorHandler, notFound, requestId } from "./middleware.js";
 import authRoutes from "./routes/auth.js";
 import patientRoutes from "./routes/patients.js";
 import appointmentRoutes from "./routes/appointments.js";
@@ -39,7 +39,8 @@ export function createApp(): express.Express {
     cors({
       origin: (origin, cb) => {
         if (!origin || allowedOrigins.includes(origin) || loopback.test(origin)) cb(null, true);
-        else cb(new Error(`CORS blocked for origin ${origin}`));
+        // Deny quietly — an Error here becomes a 500 that spams the logs.
+        else cb(null, false);
       },
       credentials: true,
     }),
@@ -82,12 +83,9 @@ export function createApp(): express.Express {
     void import("./docs/openapi.js").then(({ openApiSpec }) => res.json(openApiSpec));
   });
 
-  // Rate limiting disabled in tests — suites legitimately burst logins/refreshes
-  const limitAuth =
-    process.env.NODE_ENV === "test"
-      ? (_req: unknown, _res: unknown, next: () => void): void => next()
-      : (authLimiter as unknown as import("express").RequestHandler);
-  app.use("/api/v1/auth", limitAuth, authRoutes);
+  // Rate limits live on the individual auth routes (strict for credential
+  // guessing, generous for refresh/logout) and self-bypass in tests.
+  app.use("/api/v1/auth", authRoutes);
   app.use("/api/v1/patients", patientRoutes);
   app.use("/api/v1/appointments", appointmentRoutes);
   app.use("/api/v1/beds", bedRoutes);

@@ -82,6 +82,11 @@ export async function listStaffUsers(pagination: { page: number; limit: number }
   };
 }
 
+export async function countActiveAdmins(): Promise<number> {
+  if (!isDbReady()) return 1; // degraded: refuse destructive admin changes
+  return UserModel.countDocuments({ role: "Admin", isActive: true });
+}
+
 export async function setUserActive(email: string, isActive: boolean): Promise<boolean> {
   const res = await UserModel.updateOne({ email: email.toLowerCase().trim() }, { isActive });
   return res.matchedCount > 0;

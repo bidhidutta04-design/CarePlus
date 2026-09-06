@@ -26,7 +26,11 @@ export class ApiError extends Error {
     return new ApiError(404, "NOT_FOUND", `${resource} not found`);
   }
 
-  static conflict(message: string): ApiError {
-    return new ApiError(409, "CONFLICT", message);
+  static conflict(message: string, details?: unknown): ApiError {
+    return new ApiError(409, "CONFLICT", message, details);
+  }
+
+  static unavailable(message = "Service temporarily unavailable"): ApiError {
+    return new ApiError(503, "UNAVAILABLE", message);
   }
 }

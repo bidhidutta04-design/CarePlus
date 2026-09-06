@@ -5,7 +5,7 @@ import { z } from "zod";
 import { config } from "./config.js";
 import { ApiError } from "./errors.js";
 import { formatError, logger } from "./logger.js";
-import rateLimit from "express-rate-limit";
+import rateLimit, { type RateLimitExceededEventHandler } from "express-rate-limit";
 
 export interface AuthUser {
   sub: string;
@@ -158,8 +158,15 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   });
 }
 
-export function notFound(_req: Request, res: Response): void {
-  res.status(404).json({ error: { code: "NOT_FOUND", message: "Route not found", details: null } });
+export function notFound(req: Request, res: Response): void {
+  res.status(404).json({
+    error: {
+      code: "NOT_FOUND",
+      message: "Route not found",
+      details: null,
+      requestId: req.requestId,
+    },
+  });
 }
 
 export function requestId(req: Request, res: Response, next: NextFunction): void {
@@ -169,19 +176,44 @@ export function requestId(req: Request, res: Response, next: NextFunction): void
   next();
 }
 
-export const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
+// Credential-guessing surface (login, forgot/reset, first password): strict.
+// A whole hospital often shares one public IP (NAT) — refresh/logout get a
+// separate generous budget so normal session rotation never locks a facility.
+const tooManyRequests: RateLimitExceededEventHandler = (_req, res) => {
+  res.status(429).json({
     error: {
       code: "TOO_MANY_REQUESTS",
       message: "Too many attempts, try again later",
       details: null,
+      requestId: _req.requestId,
     },
-  },
-});
+  });
+};
+
+const passThrough = (_req: Request, _res: Response, next: NextFunction): void => next();
+
+// Rate limiting disabled in tests — suites legitimately burst logins/refreshes.
+const testEnv = process.env.NODE_ENV === "test";
+
+export const loginLimiter: import("express").RequestHandler = testEnv
+  ? passThrough
+  : (rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 20,
+      standardHeaders: true,
+      legacyHeaders: false,
+      handler: tooManyRequests,
+    }) as unknown as import("express").RequestHandler);
+
+export const refreshLimiter: import("express").RequestHandler = testEnv
+  ? passThrough
+  : (rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 180,
+      standardHeaders: true,
+      legacyHeaders: false,
+      handler: tooManyRequests,
+    }) as unknown as import("express").RequestHandler);
 
 export function auditLog(req: Request, _res: Response, next: NextFunction): void {
   // Only log mutating, authenticated requests

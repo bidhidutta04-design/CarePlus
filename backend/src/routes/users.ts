@@ -5,7 +5,9 @@ import { auditLog, requireAuth, requireRole, validate } from "../middleware.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {
   adminResetPassword,
+  countActiveAdmins,
   createStaffUser,
+  findUserByEmail,
   listStaffUsers,
   setUserActive,
 } from "../repos/userRepo.js";
@@ -75,6 +77,19 @@ router.patch(
   validate(activeSchema),
   asyncHandler(async (req, res, next) => {
     const { isActive } = req.body as { isActive: boolean };
+    const target = req.params.email.toLowerCase().trim();
+    if (!isActive) {
+      const ownEmail = (req.user?.sub ?? "").replace(/^user-/, "").toLowerCase();
+      if (target === ownEmail) {
+        next(ApiError.conflict("You cannot deactivate your own account"));
+        return;
+      }
+      const targetUser = await findUserByEmail(target);
+      if (targetUser?.role === "Admin" && (await countActiveAdmins()) <= 1) {
+        next(ApiError.conflict("Cannot deactivate the last active administrator"));
+        return;
+      }
+    }
     const ok = await setUserActive(req.params.email, isActive);
     if (!ok) {
       next(ApiError.notFound("User"));

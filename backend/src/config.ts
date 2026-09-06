@@ -14,6 +14,11 @@ function parseDuration(raw: string, fallbackMs: number): number {
   return n * unit[m[2] as keyof typeof unit];
 }
 
+// Dev defaults keep local work frictionless, but production must fail closed:
+// without real secrets the process crashes at boot instead of signing tokens
+// with a publicly known key.
+const devSecrets = process.env.NODE_ENV === "production" ? undefined : "dev-only";
+
 export const config = {
   port: Number(process.env.PORT ?? 4000),
   frontendUrl: process.env.FRONTEND_URL ?? "http://localhost:3000",
@@ -22,18 +27,22 @@ export const config = {
   // Comma-separated list supported for rotation: sign with the last, verify any.
   jwtAccessSecret: required(
     "JWT_ACCESS_SECRET",
-    process.env.JWT_SECRET ?? "dev-only-access-secret-change-me-32-chars-min",
+    process.env.JWT_SECRET ??
+      (devSecrets ? `${devSecrets}-access-secret-change-me-32-chars-min` : undefined),
   ),
   jwtAccessSecrets: (
     process.env.JWT_ACCESS_SECRET ??
     process.env.JWT_SECRET ??
-    "dev-only-access-secret-change-me-32-chars-min"
+    (devSecrets ? `${devSecrets}-access-secret-change-me-32-chars-min` : "")
   )
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean),
   // Keep JWT_SECRET as alias for backward compat + single-secret deployments
-  jwtSecret: required("JWT_SECRET", "dev-only-secret-change-me-32-chars-min"),
+  jwtSecret: required(
+    "JWT_SECRET",
+    devSecrets ? `${devSecrets}-secret-change-me-32-chars-min` : undefined,
+  ),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "15m",
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
   jwtRefreshExpiresMs: parseDuration(
