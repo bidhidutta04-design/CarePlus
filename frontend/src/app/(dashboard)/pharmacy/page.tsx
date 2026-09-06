@@ -37,7 +37,7 @@ function daysToExpiry(expiry: string): number {
 export default function PharmacyPage() {
   const createMedicine = useCreateMedicine();
   const { data, isLoading } = useMedicines();
-  const medicines = data?.data ?? [];
+  const medicines = useMemo(() => data?.data ?? [], [data]);
   const [query, setQuery] = useState("");
   const [dispenseOpen, setDispenseOpen] = useState(false);
   const [batchOpen, setBatchOpen] = useState(false);

@@ -38,7 +38,7 @@ export default function PatientsPage() {
     status: admit !== "All" ? admit : undefined,
     bloodGroup: blood !== "All" ? blood : undefined,
   });
-  const patients = data?.data ?? [];
+  const patients = useMemo(() => data?.data ?? [], [data]);
 
   const filtered = useMemo(() => {
     return patients.filter(

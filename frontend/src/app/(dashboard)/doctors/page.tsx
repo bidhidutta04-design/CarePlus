@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { useAppSelector } from "@/store/hooks";
+import { useAppointments } from "@/hooks/useAppointments";
 import { useDoctors } from "@/hooks/useDoctors";
 import { formatINR } from "@/lib/utils";
 import { UserRound, Plus } from "lucide-react";
@@ -16,7 +16,8 @@ import "swiper/css";
 import "swiper/css/pagination";
 
 export default function DoctorsPage() {
-  const appointments = useAppSelector((s) => s.clinical.appointments);
+  const { data: appointmentsData } = useAppointments();
+  const appointments = appointmentsData?.data ?? [];
   const [dept, setDept] = useState("All");
   const [selected, setSelected] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);

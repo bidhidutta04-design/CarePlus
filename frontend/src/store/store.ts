@@ -1,13 +1,11 @@
 import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./authSlice";
-import clinicalReducer from "./clinicalSlice";
-import opsReducer from "./opsSlice";
 
+// Only UI session state lives here (active role + display name).
+// All clinical data comes from the API via TanStack Query hooks in src/hooks/.
 export const store = configureStore({
   reducer: {
     auth: authReducer,
-    clinical: clinicalReducer,
-    ops: opsReducer,
   },
 });
 

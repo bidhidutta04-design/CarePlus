@@ -45,7 +45,9 @@ import { useTheme } from "next-themes";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { switchRole } from "@/store/authSlice";
 import type { RoleType } from "@/types/common";
-import { seedPatients, seedDoctors, seedAppointments } from "@/lib/seed-data";
+import { usePatients } from "@/hooks/usePatients";
+import { useDoctors } from "@/hooks/useDoctors";
+import { useAppointments } from "@/hooks/useAppointments";
 
 const ROLES: Array<{ value: RoleType; label: string; icon: typeof Users }> = [
   { value: "Admin", label: "Hospital Administrator", icon: LayoutDashboard },
@@ -90,6 +92,16 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifRead, setNotifRead] = useState(false);
+  const [query, setQuery] = useState("");
+  const { data: patientsData } = usePatients(query ? { search: query } : undefined);
+  const { data: doctorsData } = useDoctors();
+  const { data: appointmentsData } = useAppointments(query ? { search: query } : undefined);
+  const foundPatients = (patientsData?.data ?? []).slice(0, 4);
+  const q = query.toLowerCase();
+  const foundDoctors = (doctorsData?.data ?? [])
+    .filter((d) => !q || `${d.name} ${d.id} ${d.department}`.toLowerCase().includes(q))
+    .slice(0, 4);
+  const foundAppointments = (appointmentsData?.data ?? []).slice(0, 4);
   const role = useAppSelector((s) => s.auth.role);
   const userName = useAppSelector((s) => s.auth.userName);
   const dispatch = useAppDispatch();
@@ -142,12 +154,17 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-[380px] p-0" sideOffset={8} align="start">
-            <Command>
-              <CommandInput ref={searchRef} placeholder="Type name, ID, department…" />
+            <Command shouldFilter={false}>
+              <CommandInput
+                ref={searchRef}
+                placeholder="Type name, ID, department…"
+                value={query}
+                onValueChange={setQuery}
+              />
               <CommandList>
                 <CommandEmpty>No results found.</CommandEmpty>
                 <CommandGroup heading="Patients">
-                  {seedPatients.slice(0, 4).map((p) => (
+                  {foundPatients.map((p) => (
                     <CommandItem key={p.id} value={`${p.fullName} ${p.id}`} onSelect={() => go(p.id)}>
                       <span className="font-medium">{p.fullName}</span>
                       <span className="ml-2 text-xs text-muted-foreground">
@@ -157,7 +174,7 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
                   ))}
                 </CommandGroup>
                 <CommandGroup heading="Doctors">
-                  {seedDoctors.slice(0, 4).map((d) => (
+                  {foundDoctors.map((d) => (
                     <CommandItem key={d.id} value={`${d.name} ${d.id}`} onSelect={() => go(d.id)}>
                       <span className="font-medium">{d.name}</span>
                       <span className="ml-2 text-xs text-muted-foreground">
@@ -167,7 +184,7 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
                   ))}
                 </CommandGroup>
                 <CommandGroup heading="Appointments">
-                  {seedAppointments.slice(0, 4).map((a) => (
+                  {foundAppointments.map((a) => (
                     <CommandItem key={a.id} value={`${a.id} ${a.patientName}`} onSelect={() => go(a.id)}>
                       <span className="font-medium">{a.id}</span>
                       <span className="ml-2 text-xs text-muted-foreground">

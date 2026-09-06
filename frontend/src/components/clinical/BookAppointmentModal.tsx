@@ -7,10 +7,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { addAppointment } from "@/store/clinicalSlice";
+import { usePatients } from "@/hooks/usePatients";
+import { useCreateAppointment } from "@/hooks/useAppointments";
 import { useDoctors } from "@/hooks/useDoctors";
-import { apiClient } from "@/lib/apiClient";
 
 const schema = z.object({
   patientId: z.string().min(1, "Select a patient"),
@@ -26,23 +25,24 @@ type Form = z.infer<typeof schema>;
 const SLOTS = ["09:00 AM", "09:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "02:00 PM", "02:30 PM"];
 
 export function BookAppointmentModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const dispatch = useAppDispatch();
-  const patients = useAppSelector((s) => s.clinical.patients);
+  const { data: patientsData } = usePatients();
+  const patients = patientsData?.data ?? [];
   const { data: doctorsData } = useDoctors();
   const doctors = doctorsData?.data ?? [];
+  const createAppointment = useCreateAppointment();
   const today = new Date().toISOString().slice(0, 10);
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<Form>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<Form>({
     resolver: zodResolver(schema),
     defaultValues: { date: today, priority: "Routine", timeSlot: "10:00 AM" },
   });
 
-  const onSubmit = async (v: Form): Promise<void> => {
+  const onSubmit = (v: Form): void => {
     const patient = patients.find((p) => p.id === v.patientId);
     const doctor = doctors.find((d) => d.id === v.doctorId);
     if (!patient || !doctor) return;
-    try {
-      const { data } = await apiClient.post<{ data: { id: string; tokenNo: string } }>("/appointments", {
+    createAppointment.mutate(
+      {
         patientId: patient.id,
         doctorId: doctor.id,
         doctorName: doctor.name,
@@ -51,28 +51,14 @@ export function BookAppointmentModal({ open, onClose }: { open: boolean; onClose
         timeSlot: v.timeSlot,
         priority: v.priority,
         reason: v.reason,
-      });
-      dispatch(
-        addAppointment({
-          id: data.data.id,
-          tokenNo: data.data.tokenNo,
-          patientId: patient.id,
-          patientName: patient.fullName,
-          department: doctor.department,
-          doctorId: doctor.id,
-          doctorName: doctor.name,
-          date: v.date,
-          timeSlot: v.timeSlot,
-          priority: v.priority,
-          reason: v.reason,
-          status: "Waiting",
-        })
-      );
-      reset();
-      onClose();
-    } catch {
-      // error handled by apiClient interceptor
-    }
+      },
+      {
+        onSuccess: () => {
+          reset();
+          onClose();
+        },
+      }
+    );
   };
 
   return (
@@ -114,9 +100,14 @@ export function BookAppointmentModal({ open, onClose }: { open: boolean; onClose
               {errors.reason && <span className="text-xs text-red-600">{errors.reason.message}</span>}
             </label>
           </div>
+          {createAppointment.isError && (
+            <p className="text-sm text-red-600">Booking failed. Please try again.</p>
+          )}
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
-            <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Booking…" : "Book token"}</Button>
+            <Button type="button" variant="outline" onClick={onClose} disabled={createAppointment.isPending}>Cancel</Button>
+            <Button type="submit" disabled={createAppointment.isPending}>
+              {createAppointment.isPending ? "Booking…" : "Book token"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

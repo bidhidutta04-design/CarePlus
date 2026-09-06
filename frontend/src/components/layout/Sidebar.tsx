@@ -12,6 +12,9 @@ import {
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { switchRole } from "@/store/authSlice";
 import type { RoleType } from "@/types/common";
+import { useAppointments } from "@/hooks/useAppointments";
+import { useMedicines } from "@/hooks/usePharmacy";
+import { useLabReports } from "@/hooks/useLab";
 
 const NAV_ITEMS: Array<{ href: string; label: string; icon: typeof HeartPulse; badge: BadgeType; live?: boolean }> = [
   { href: "/", label: "Dashboard", icon: HeartPulse, badge: null },
@@ -46,11 +49,14 @@ function SidebarInner({
   const role = useAppSelector((s) => s.auth.role);
   const userName = useAppSelector((s) => s.auth.userName);
   const dispatch = useAppDispatch();
-  const appointments = useAppSelector((s) => s.clinical.appointments);
-  const medicines = useAppSelector((s) => s.ops.medicines);
-  const labs = useAppSelector((s) => s.ops.labs);
+  const { data: appointmentsData } = useAppointments();
+  const { data: medicinesData } = useMedicines();
+  const { data: labsData } = useLabReports();
 
   const counts = useMemo(() => {
+    const appointments = appointmentsData?.data ?? [];
+    const medicines = medicinesData?.data ?? [];
+    const labs = labsData?.data ?? [];
     let active = 0;
     for (const a of appointments) if (a.status === "Waiting" || a.status === "In Triage") active += 1;
     let low = 0;
@@ -58,7 +64,7 @@ function SidebarInner({
     let pending = 0;
     for (const l of labs) if (l.status !== "Report Approved") pending += 1;
     return { appointments: active, lowstock: low, pending, live: null as number | null };
-  }, [appointments, medicines, labs]);
+  }, [appointmentsData, medicinesData, labsData]);
 
   return (
     <>

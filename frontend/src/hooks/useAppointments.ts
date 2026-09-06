@@ -48,6 +48,34 @@ export function useAppointments(filters?: { status?: string; department?: string
   });
 }
 
+export function useCreateAppointment() {
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  return useMutation({
+    mutationFn: async (payload: {
+      patientId: string;
+      doctorId: string;
+      doctorName: string;
+      department: string;
+      date: string;
+      timeSlot: string;
+      priority: "Routine" | "Urgent" | "Emergency";
+      reason: string;
+    }) => {
+      const { data } = await apiClient.post<{ data: ApiAppointment }>("/appointments", payload);
+      return data.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["appointments"] });
+    },
+    onError: (error) => {
+      if (error instanceof Error && "status" in error && (error as { status: number }).status === 401) {
+        router.push("/login");
+      }
+    },
+  });
+}
+
 export function useUpdateAppointmentStatus() {
   const queryClient = useQueryClient();
   const router = useRouter();

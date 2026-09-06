@@ -40,7 +40,7 @@ export default function AppointmentsPage() {
     priority: priority !== "All" ? priority : undefined,
     search: query || undefined,
   });
-  const appointments = data?.data ?? [];
+  const appointments = useMemo(() => data?.data ?? [], [data]);
 
   const depts = useMemo(() => ["All", ...Array.from(new Set(appointments.map((a) => a.department)))], [appointments]);
 

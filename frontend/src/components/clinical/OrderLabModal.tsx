@@ -6,8 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { addLab } from "@/store/opsSlice";
+import { usePatients } from "@/hooks/usePatients";
+import { useCreateLabOrder } from "@/hooks/useLab";
 
 const schema = z.object({
   patientId: z.string().min(1, "Select patient"),
@@ -20,31 +20,21 @@ type Form = z.infer<typeof schema>;
 const TESTS = ["Complete Blood Count", "Lipid Profile", "HbA1c (Glycated Hb)", "Thyroid Stimulating Hormone", "Kidney Function Test", "Liver Function Test", "Dengue NS1 Antigen", "ECG 12-Lead", "Chest X-Ray"];
 
 export function OrderLabModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const dispatch = useAppDispatch();
-  const patients = useAppSelector((s) => s.clinical.patients);
-  const labs = useAppSelector((s) => s.ops.labs);
+  const { data: patientsData } = usePatients();
+  const patients = patientsData?.data ?? [];
+  const createOrder = useCreateLabOrder();
   const { register, handleSubmit, reset, formState: { errors } } = useForm<Form>({ resolver: zodResolver(schema) });
 
   const onSubmit = (v: Form): void => {
-    const patient = patients.find((p) => p.id === v.patientId);
-    if (!patient) return;
-    const n = 2001 + labs.length;
-    dispatch(
-      addLab({
-        id: `LAB-${n}`,
-        testCode: v.testName.split(" ").map((w) => w[0]).join("").slice(0, 5).toUpperCase(),
-        testName: v.testName,
-        patientId: patient.id,
-        patientName: patient.fullName,
-        doctorName: v.doctorName,
-        orderDate: "2026-09-04",
-        status: "Ordered",
-        results: [],
-        pathologistSign: "",
-      })
+    createOrder.mutate(
+      { patientId: v.patientId, testName: v.testName, doctorName: v.doctorName },
+      {
+        onSuccess: () => {
+          reset();
+          onClose();
+        },
+      }
     );
-    reset();
-    onClose();
   };
 
   return (
@@ -70,9 +60,14 @@ export function OrderLabModal({ open, onClose }: { open: boolean; onClose: () =>
             <Input placeholder="Dr. Amit Verma" {...register("doctorName")} />
             {errors.doctorName && <span className="text-xs text-red-600">{errors.doctorName.message}</span>}
           </label>
+          {createOrder.isError && (
+            <p className="text-sm text-red-600">Order failed. Please try again.</p>
+          )}
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit">Place order</Button>
+            <Button type="button" variant="outline" onClick={onClose} disabled={createOrder.isPending}>Cancel</Button>
+            <Button type="submit" disabled={createOrder.isPending}>
+              {createOrder.isPending ? "Ordering…" : "Place order"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
