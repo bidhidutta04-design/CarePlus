@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { memo, useMemo } from "react";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,8 @@ import {
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { switchRole } from "@/store/authSlice";
 import type { RoleType } from "@/types/common";
+import { setRoleCookie } from "@/lib/apiClient";
+import { homeFor } from "@/lib/roles";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useMedicines } from "@/hooks/usePharmacy";
 import { useLabReports } from "@/hooks/useLab";
@@ -23,21 +25,27 @@ const NAV_ITEMS: Array<{
   badge: BadgeType;
   live?: boolean;
   adminOnly?: boolean;
+  roles?: RoleType[];
 }> = [
-  { href: "/dashboard", label: "Dashboard", icon: HeartPulse, badge: null },
-  { href: "/appointments", label: "Appointments", icon: Users, badge: "appointments" },
-  { href: "/patients", label: "Patients", icon: Users, badge: null },
-  { href: "/doctors", label: "Doctors", icon: UserRound, badge: null },
-  { href: "/departments", label: "Departments", icon: Building2, badge: null },
-  { href: "/departments/beds", label: "Inpatient Beds", icon: Bed, badge: "live", live: true },
-  { href: "/billing", label: "Billing", icon: FileText, badge: null },
-  { href: "/pharmacy", label: "Pharmacy", icon: Pill, badge: "lowstock" },
-  { href: "/lab-reports", label: "Lab Reports", icon: FlaskConical, badge: "pending" },
-  { href: "/inventory", label: "Inventory", icon: Boxes, badge: null },
-  { href: "/staff", label: "Staff", icon: IdCard, badge: null },
-  { href: "/team", label: "Team Accounts", icon: Users, badge: null, adminOnly: true },
-  { href: "/reports", label: "Reports", icon: ChartLine, badge: null },
-  { href: "/settings", label: "Settings", icon: Settings, badge: null },
+  { href: "/dashboard", label: "Dashboard", icon: HeartPulse, badge: null, roles: ["Admin"] },
+  { href: "/desk/doctor", label: "My Desk", icon: HeartPulse, badge: "appointments", roles: ["Doctor"] },
+  { href: "/desk/nurse", label: "My Desk", icon: HeartPulse, badge: "appointments", roles: ["Nurse"] },
+  { href: "/desk/pharmacy", label: "My Desk", icon: HeartPulse, badge: "lowstock", roles: ["Pharmacist"] },
+  { href: "/desk/lab", label: "My Desk", icon: HeartPulse, badge: "pending", roles: ["LabTech"] },
+  { href: "/desk/billing", label: "My Desk", icon: HeartPulse, badge: null, roles: ["Cashier"] },
+  { href: "/appointments", label: "Appointments", icon: Users, badge: "appointments", roles: ["Admin", "Doctor", "Nurse"] },
+  { href: "/patients", label: "Patients", icon: Users, badge: null, roles: ["Admin", "Doctor", "Nurse", "LabTech", "Cashier"] },
+  { href: "/doctors", label: "Doctors", icon: UserRound, badge: null, roles: ["Admin", "Doctor"] },
+  { href: "/departments", label: "Departments", icon: Building2, badge: null, roles: ["Admin", "Doctor", "Nurse"] },
+  { href: "/departments/beds", label: "Inpatient Beds", icon: Bed, badge: "live", live: true, roles: ["Admin", "Nurse"] },
+  { href: "/billing", label: "Billing", icon: FileText, badge: null, roles: ["Admin", "Cashier"] },
+  { href: "/pharmacy", label: "Pharmacy", icon: Pill, badge: "lowstock", roles: ["Admin", "Pharmacist"] },
+  { href: "/lab-reports", label: "Lab Reports", icon: FlaskConical, badge: "pending", roles: ["Admin", "Doctor", "LabTech"] },
+  { href: "/inventory", label: "Inventory", icon: Boxes, badge: null, roles: ["Admin", "Pharmacist"] },
+  { href: "/staff", label: "Staff", icon: IdCard, badge: null, roles: ["Admin"] },
+  { href: "/team", label: "Team Accounts", icon: Users, badge: null, adminOnly: true, roles: ["Admin"] },
+  { href: "/reports", label: "Reports", icon: ChartLine, badge: null, roles: ["Admin"] },
+  { href: "/settings", label: "Settings", icon: Settings, badge: null, roles: ["Admin"] },
 ];
 
 type BadgeType = "appointments" | "lowstock" | "pending" | "live" | null;
@@ -54,6 +62,7 @@ function SidebarInner({
   onCloseMobile: () => void;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const role = useAppSelector((s) => s.auth.role);
   const userName = useAppSelector((s) => s.auth.userName);
   const dispatch = useAppDispatch();
@@ -113,7 +122,10 @@ function SidebarInner({
           </div>
 
           <nav className="flex-1 space-y-1 overflow-y-auto p-3" aria-label="Sidebar navigation">
-            {NAV_ITEMS.filter((item) => !item.adminOnly || role === "Admin").map((item) => {
+            {NAV_ITEMS.filter(
+              (item) =>
+                (!item.adminOnly || role === "Admin") && (!item.roles || item.roles.includes(role)),
+            ).map((item) => {
               const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
               const count = item.badge === null ? null : counts[item.badge];
               const Icon = item.icon;
@@ -157,7 +169,13 @@ function SidebarInner({
                   <select
                     className="rounded-lg border border-white/20 bg-white/10 px-2 py-1 text-xs text-white focus:outline-none focus:ring-2 focus:ring-accent"
                     value={role}
-                    onChange={(e) => dispatch(switchRole(e.target.value as RoleType))}
+                    onChange={(e) => {
+                      const next = e.target.value as RoleType;
+                      dispatch(switchRole(next));
+                      setRoleCookie(next);
+                      router.push(homeFor(next));
+                      onCloseMobile();
+                    }}
                     aria-label="Switch role"
                   >
                     <option value="Admin">Administrator</option>

@@ -48,6 +48,8 @@ import type { RoleType } from "@/types/common";
 import { usePatients } from "@/hooks/usePatients";
 import { useDoctors } from "@/hooks/useDoctors";
 import { useAppointments } from "@/hooks/useAppointments";
+import { clearSession, setRoleCookie } from "@/lib/apiClient";
+import { homeFor } from "@/lib/roles";
 
 const ROLES: Array<{ value: RoleType; label: string; icon: typeof Users }> = [
   { value: "Admin", label: "Hospital Administrator", icon: LayoutDashboard },
@@ -274,7 +276,11 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
             {ROLES.map((r) => (
               <DropdownMenuItem
                 key={r.value}
-                onSelect={() => dispatch(switchRole(r.value))}
+                onSelect={() => {
+                  dispatch(switchRole(r.value));
+                  setRoleCookie(r.value);
+                  router.push(homeFor(r.value));
+                }}
                 className={cn(role === r.value && "bg-clinical/10 text-clinical")}
               >
                 <r.icon className="mr-2 h-4 w-4" />
@@ -292,9 +298,7 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
               Settings
             </DropdownMenuItem>
             <DropdownMenuItem className="text-destructive" onSelect={() => {
-              localStorage.removeItem("careplus_token");
-              localStorage.removeItem("careplus_refresh_token");
-              document.cookie = "careplus_token=; path=/; max-age=0";
+              clearSession();
               router.push("/login");
             }}>
               <LogOut className="mr-2 h-4 w-4" />

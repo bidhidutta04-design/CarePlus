@@ -18,16 +18,24 @@ export function getAccessToken(): string | null {
   return window.localStorage.getItem(TOKEN_KEY);
 }
 
-export function setSession(token: string, refreshToken: string): void {
+export function setSession(token: string, refreshToken: string, role?: string): void {
   window.localStorage.setItem(TOKEN_KEY, token);
   window.localStorage.setItem(REFRESH_KEY, refreshToken);
   document.cookie = `careplus_token=${token}; path=/; max-age=1800; samesite=strict`;
+  if (role) {
+    document.cookie = `careplus_role=${role}; path=/; max-age=1800; samesite=strict`;
+  }
+}
+
+export function setRoleCookie(role: string): void {
+  document.cookie = `careplus_role=${role}; path=/; max-age=1800; samesite=strict`;
 }
 
 export function clearSession(): void {
   window.localStorage.removeItem(TOKEN_KEY);
   window.localStorage.removeItem(REFRESH_KEY);
   document.cookie = "careplus_token=; path=/; max-age=0";
+  document.cookie = "careplus_role=; path=/; max-age=0";
 }
 
 // Single-flight refresh: concurrent 401s share one refresh call.

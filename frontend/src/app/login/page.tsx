@@ -9,7 +9,7 @@ import { useAppDispatch } from "@/store/hooks";
 import { loginSuccess } from "@/store/authSlice";
 import { apiClient, getApiErrorMessage, setSession } from "@/lib/apiClient";
 import { HeartPulse } from "lucide-react";
-import type { RoleType } from "@/types/common";
+import { homeFor, isValidRole } from "@/lib/roles";
 
 interface LoginResponse {
   data: {
@@ -52,9 +52,13 @@ export default function LoginPage() {
         email: email.trim(),
         password,
       });
-      setSession(data.data.token, data.data.refreshToken);
-      dispatch(loginSuccess({ role: data.data.role as RoleType, userName: data.data.name }));
-      router.push("/dashboard");
+      if (!isValidRole(data.data.role)) {
+        setError("Server returned an unknown role. Please contact your administrator.");
+        return;
+      }
+      setSession(data.data.token, data.data.refreshToken, data.data.role);
+      dispatch(loginSuccess({ role: data.data.role, userName: data.data.name }));
+      router.push(homeFor(data.data.role));
     } catch (err: unknown) {
       const code =
         err !== null && typeof err === "object" && "response" in err
