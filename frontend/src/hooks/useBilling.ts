@@ -59,7 +59,7 @@ export function useCreateInvoice() {
   const queryClient = useQueryClient();
   const router = useRouter();
   return useMutation({
-    mutationFn: async (payload: { patientId: string; patientName: string; items: Array<{ desc: string; dept: string; amount: number }>; discount?: number; paymentMethod: string }) => {
+    mutationFn: async (payload: { patientId: string; patientName: string; items: Array<{ desc: string; dept: string; amount: number }>; discount?: number; paymentMethod: string; tpaProvider?: string }) => {
       const { data } = await apiClient.post<{ data: ApiInvoice }>("/billing/invoices", payload);
       return data.data;
     },

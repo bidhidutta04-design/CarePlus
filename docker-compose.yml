@@ -36,6 +36,18 @@ services:
         condition: service_healthy
     command: sh -c "node backend/dist/index.js"
 
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:4000/api/v1
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
   # Optional: seed on first boot
   # Run: docker compose run --rm api npm run seed -w @careplus/backend
 

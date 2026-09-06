@@ -10,6 +10,7 @@ import {
   ChevronLeft, ChevronRight, X,
 } from "lucide-react";
 import { useAppSelector } from "@/store/hooks";
+import { useHospitalSettings } from "@/hooks/useHospitalSettings";
 import type { RoleType } from "@/types/common";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useMedicines } from "@/hooks/usePharmacy";
@@ -63,6 +64,7 @@ function SidebarInner({
   const pathname = usePathname();
   const role = useAppSelector((s) => s.auth.role);
   const userName = useAppSelector((s) => s.auth.userName);
+  const { settings } = useHospitalSettings();
   const { data: appointmentsData } = useAppointments();
   const { data: medicinesData } = useMedicines();
   const { data: labsData } = useLabReports();
@@ -165,15 +167,17 @@ function SidebarInner({
                   <span className="text-white/60">Signed in as</span>
                   <span className="font-semibold text-white">{role}</span>
                 </div>
-                <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3">
-                  <Phone className="h-5 w-5 text-accent" aria-hidden="true" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs text-white/60">24/7 Support</p>
-                    <a href="tel:+19877654320" className="block truncate text-sm font-semibold text-white transition-colors hover:text-accent">
-                      +1 (987) 765 4320
-                    </a>
+                {settings.contactPhoneHref && settings.contactPhone ? (
+                  <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3">
+                    <Phone className="h-5 w-5 text-accent" aria-hidden="true" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs text-white/60">24/7 Support</p>
+                      <a href={`tel:${settings.contactPhoneHref}`} className="block truncate text-sm font-semibold text-white transition-colors hover:text-accent">
+                        {settings.contactPhone}
+                      </a>
+                    </div>
                   </div>
-                </div>
+                ) : null}
                 <p className="text-center text-xs text-white/40">{userName}</p>
               </div>
             ) : (

@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useAppointments, useUpdateAppointmentStatus } from "@/hooks/useAppointments";
 import { useAppSelector } from "@/store/hooks";
+import { getApiErrorMessage } from "@/lib/apiClient";
 import { CalendarCheck, Stethoscope, CheckCircle2 } from "lucide-react";
 
 export default function DoctorDeskPage() {
@@ -33,6 +34,9 @@ export default function DoctorDeskPage() {
           </Button>
         }
       />
+      {updateStatus.isError && (
+        <p role="alert" className="mb-4 text-sm text-red-600">{getApiErrorMessage(updateStatus.error)}</p>
+      )}
       <div className="grid gap-4 sm:grid-cols-3">
         <KpiCard icon={CalendarCheck} label="Waiting" value={String(waiting)} sub="in queue now" tone="blue" />
         <KpiCard icon={Stethoscope} label="With doctor" value={String(withDoctor)} sub="in consult" tone="amber" />

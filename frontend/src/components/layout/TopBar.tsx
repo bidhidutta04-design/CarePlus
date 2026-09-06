@@ -52,6 +52,7 @@ import { useLabReports } from "@/hooks/useLab";
 import { useMedicines } from "@/hooks/usePharmacy";
 import { useStaffPrefs } from "@/hooks/useStaffPrefs";
 import { clearSession, revokeServerSession } from "@/lib/apiClient";
+import { pathAllowed } from "@/lib/roles";
 import { useQueryClient } from "@tanstack/react-query";
 
 const ROLES: Array<{ value: RoleType; label: string; icon: typeof Users }> = [
@@ -193,6 +194,11 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
   const searchRef = useRef<HTMLInputElement>(null);
 
   const currentRole = ROLES.find((r) => r.value === role) ?? ROLES[0];
+  // Search only offers destinations this role may actually open — otherwise a
+  // click bounces off the route guard and feels broken.
+  const canSeePatients = pathAllowed(role, "/patients/x");
+  const canSeeDoctors = pathAllowed(role, "/doctors");
+  const canSeeAppointments = pathAllowed(role, "/appointments");
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
@@ -248,6 +254,7 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
               />
               <CommandList>
                 <CommandEmpty>No results found.</CommandEmpty>
+                {canSeePatients && (
                 <CommandGroup heading="Patients">
                   {foundPatients.map((p) => (
                     <CommandItem key={p.id} value={`${p.fullName} ${p.id}`} onSelect={() => go(p.id)}>
@@ -258,6 +265,8 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
                     </CommandItem>
                   ))}
                 </CommandGroup>
+                )}
+                {canSeeDoctors && (
                 <CommandGroup heading="Doctors">
                   {foundDoctors.map((d) => (
                     <CommandItem key={d.id} value={`${d.name} ${d.id}`} onSelect={() => go(d.id)}>
@@ -268,6 +277,8 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
                     </CommandItem>
                   ))}
                 </CommandGroup>
+                )}
+                {canSeeAppointments && (
                 <CommandGroup heading="Appointments">
                   {foundAppointments.map((a) => (
                     <CommandItem key={a.id} value={`${a.id} ${a.patientName}`} onSelect={() => go(a.id)}>
@@ -278,6 +289,7 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
                     </CommandItem>
                   ))}
                 </CommandGroup>
+                )}
                 <CommandSeparator />
               </CommandList>
             </Command>

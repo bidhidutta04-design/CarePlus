@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   outputFileTracingRoot: path.join(__dirname, "../"),
+  // Minimal production image (see frontend/Dockerfile).
+  output: "standalone",
 };
 
 export default nextConfig;

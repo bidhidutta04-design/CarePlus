@@ -18,6 +18,7 @@ export function CreateInvoiceModal({ open, onClose }: { open: boolean; onClose: 
   const [amount, setAmount] = useState(0);
   const [lines, setLines] = useState<Array<{ desc: string; dept: string; amount: number }>>([]);
   const [method, setMethod] = useState<"Cash" | "Card" | "UPI" | "TPA Insurance">("UPI");
+  const [tpaProvider, setTpaProvider] = useState("");
 
   const subtotal = lines.reduce((s, l) => s + l.amount, 0);
   const tax = Math.round(subtotal * 0.05);
@@ -40,6 +41,9 @@ export function CreateInvoiceModal({ open, onClose }: { open: boolean; onClose: 
         items: lines,
         discount: 0,
         paymentMethod: method,
+        ...(method === "TPA Insurance" && tpaProvider.trim()
+          ? { tpaProvider: tpaProvider.trim() }
+          : {}),
       },
       {
         onSuccess: () => {
@@ -90,6 +94,11 @@ export function CreateInvoiceModal({ open, onClose }: { open: boolean; onClose: 
               <option>Cash</option><option>Card</option><option>UPI</option><option>TPA Insurance</option>
             </select>
           </label>
+          {method === "TPA Insurance" && (
+            <label className="grid gap-1 text-sm">Insurance provider (TPA)
+              <Input value={tpaProvider} onChange={(e) => setTpaProvider(e.target.value)} placeholder="e.g. Star Health, HDFC ERGO" />
+            </label>
+          )}
           {createInvoice.isError && (
             <p className="text-sm text-red-600">Invoice failed. Please try again.</p>
           )}

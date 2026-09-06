@@ -10,6 +10,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { useAppointments, useUpdateAppointmentStatus } from "@/hooks/useAppointments";
 import { useBeds } from "@/hooks/useBeds";
 import { useAppSelector } from "@/store/hooks";
+import { getApiErrorMessage } from "@/lib/apiClient";
 import { ClipboardList, BedDouble, Siren } from "lucide-react";
 
 export default function NurseDeskPage() {
@@ -35,6 +36,9 @@ export default function NurseDeskPage() {
           </Button>
         }
       />
+      {updateStatus.isError && (
+        <p role="alert" className="mb-4 text-sm text-red-600">{getApiErrorMessage(updateStatus.error)}</p>
+      )}
       {emergencies.length > 0 && (
         <div className="mb-4 flex items-center gap-2 rounded-2xl border border-red-200 bg-[#fde8e8] px-4 py-2.5 text-sm font-medium text-[#c62828]">
           <Siren className="h-4 w-4 shrink-0 animate-pulse" />
