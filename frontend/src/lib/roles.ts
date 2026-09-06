@@ -35,7 +35,7 @@ export const ROLE_PATHS: Record<RoleType, string[]> = {
   Cashier: ["/desk/billing", "/billing", "/patients", "/settings"],
 };
 
-export function isValidRole(value: string | undefined): value is RoleType {
+export function isValidRole(value: string | undefined | null): value is RoleType {
   return (
     value === "Admin" ||
     value === "Doctor" ||

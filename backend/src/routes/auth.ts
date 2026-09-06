@@ -155,7 +155,14 @@ router.post(
       jti,
     });
     res.cookie("refreshToken", newRefreshToken, refreshCookieOptions(config.jwtRefreshExpiresMs));
-    res.json({ data: { token, refreshToken: newRefreshToken, expiresIn: config.jwtExpiresIn } });
+    res.json({
+      data: {
+        token,
+        refreshToken: newRefreshToken,
+        role: session.role,
+        expiresIn: config.jwtExpiresIn,
+      },
+    });
   }),
 );
 

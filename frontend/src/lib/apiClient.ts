@@ -18,6 +18,23 @@ export function getAccessToken(): string | null {
   return window.localStorage.getItem(TOKEN_KEY);
 }
 
+export function getRefreshToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(REFRESH_KEY);
+}
+
+// Tell the server to revoke the refresh session. Best-effort: local sign-out
+// always proceeds even if the network call fails.
+export async function revokeServerSession(): Promise<void> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return;
+  try {
+    await axios.post(`${baseURL()}/auth/logout`, { refreshToken }, { timeout: 8000 });
+  } catch {
+    // logout must never trap the user — local state is cleared regardless
+  }
+}
+
 export function setSession(token: string, refreshToken: string, role?: string): void {
   window.localStorage.setItem(TOKEN_KEY, token);
   window.localStorage.setItem(REFRESH_KEY, refreshToken);
@@ -38,6 +55,19 @@ export function clearSession(): void {
   document.cookie = "careplus_role=; path=/; max-age=0";
 }
 
+// Role lives inside the access token payload — reading it here keeps the
+// role cookie sliding with every refresh (previously it expired 30 min after
+// login no matter how active the session was).
+function getRoleFromToken(token: string): string | null {
+  try {
+    const segment = (token.split(".")[1] ?? "").replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(atob(segment)) as { role?: unknown };
+    return typeof payload.role === "string" ? payload.role : null;
+  } catch {
+    return null;
+  }
+}
+
 // Single-flight refresh: concurrent 401s share one refresh call.
 let refreshPromise: Promise<string> | null = null;
 
@@ -47,12 +77,11 @@ async function refreshAccessToken(): Promise<string> {
       const refreshToken =
         typeof window === "undefined" ? null : window.localStorage.getItem(REFRESH_KEY);
       if (!refreshToken) throw new Error("No refresh token");
-      const { data } = await axios.post<{ data: { token: string; refreshToken: string } }>(
-        `${baseURL()}/auth/refresh`,
-        { refreshToken },
-        { timeout: 15000 },
-      );
-      setSession(data.data.token, data.data.refreshToken);
+      const { data } = await axios.post<{
+        data: { token: string; refreshToken: string; role?: string };
+      }>(`${baseURL()}/auth/refresh`, { refreshToken }, { timeout: 15000 });
+      const role = data.data.role ?? getRoleFromToken(data.data.token);
+      setSession(data.data.token, data.data.refreshToken, role ?? undefined);
       return data.data.token;
     })().finally(() => {
       refreshPromise = null;
@@ -61,10 +90,20 @@ async function refreshAccessToken(): Promise<string> {
   return refreshPromise;
 }
 
+export function getRoleCookie(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/(?:^|;\s*)careplus_role=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 function redirectToLogin(): void {
   if (typeof window !== "undefined") {
+    const back = window.location.pathname;
     clearSession();
-    window.location.href = "/login";
+    window.location.href =
+      back.startsWith("/login") || back === "/"
+        ? "/login"
+        : `/login?redirect=${encodeURIComponent(back)}`;
   }
 }
 

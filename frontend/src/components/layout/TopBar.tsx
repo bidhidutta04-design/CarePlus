@@ -51,7 +51,8 @@ import { useAppointments } from "@/hooks/useAppointments";
 import { useLabReports } from "@/hooks/useLab";
 import { useMedicines } from "@/hooks/usePharmacy";
 import { useStaffPrefs } from "@/hooks/useStaffPrefs";
-import { clearSession } from "@/lib/apiClient";
+import { clearSession, revokeServerSession } from "@/lib/apiClient";
+import { useQueryClient } from "@tanstack/react-query";
 
 const ROLES: Array<{ value: RoleType; label: string; icon: typeof Users }> = [
   { value: "Admin", label: "Hospital Administrator", icon: LayoutDashboard },
@@ -182,6 +183,7 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
     .filter((d) => !q || `${d.name} ${d.id} ${d.department}`.toLowerCase().includes(q))
     .slice(0, 4);
   const foundAppointments = (appointmentsData?.data ?? []).slice(0, 4);
+  const queryClient = useQueryClient();
   const notifications = useLiveNotifications();
   const unreadCount = notifRead ? 0 : notifications.length;
   const criticalCount = notifications.filter((n) => n.type === "critical").length;
@@ -367,9 +369,12 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
               Settings
             </DropdownMenuItem>
             <DropdownMenuItem className="text-destructive" onSelect={() => {
-              clearSession();
-              dispatch(logout());
-              router.push("/login");
+              void revokeServerSession().finally(() => {
+                queryClient.clear();
+                clearSession();
+                dispatch(logout());
+                router.push("/login");
+              });
             }}>
               <LogOut className="mr-2 h-4 w-4" />
               Sign out

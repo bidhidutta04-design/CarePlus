@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { homeFor, isValidRole, pathAllowed } from "@/lib/roles";
 
-const PUBLIC_PREFIXES = ["/login", "/portal", "/forgot-password", "/api"];
+const PUBLIC_PREFIXES = ["/login", "/portal", "/forgot-password", "/change-password", "/api"];
 
 // NOTE: UI gating only. The role cookie is readable client-side and could be
 // forged — but the backend re-checks RBAC on every API call, so a forged role

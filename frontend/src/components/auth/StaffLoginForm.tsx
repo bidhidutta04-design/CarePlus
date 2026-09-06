@@ -73,7 +73,17 @@ export function StaffLoginForm({
       }
       setSession(data.data.token, data.data.refreshToken, data.data.role);
       dispatch(loginSuccess({ role: data.data.role, userName: data.data.name }));
-      router.push(homeFor(data.data.role));
+      // Honor ?redirect= from the auth guard (deep links/bookmarks); fall back
+      // to the role home. Same-tab path only — never an external URL.
+      const redirect =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("redirect")
+          : null;
+      const safeRedirect =
+        redirect && redirect.startsWith("/") && !redirect.startsWith("/login")
+          ? redirect
+          : null;
+      router.push(safeRedirect ?? homeFor(data.data.role));
     } catch (err: unknown) {
       const code =
         err !== null && typeof err === "object" && "response" in err
