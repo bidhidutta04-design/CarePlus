@@ -4,6 +4,28 @@ import { connectDB, disconnectDB } from "./db.js";
 import { formatError, logger } from "./logger.js";
 
 async function main(): Promise<void> {
+  const app = createApp();
+
+  // Bind the port BEFORE touching mongo: if another backend already owns it,
+  // fail here with one clear line instead of a crash after mongo connected.
+  const server = app.listen(config.port);
+  await new Promise<void>((resolve, reject) => {
+    server.once("listening", () => {
+      logger.info(`careplus-api listening on http://localhost:${config.port}`);
+      resolve();
+    });
+    server.once("error", (err: unknown) => {
+      const code = (err as { code?: string }).code;
+      if (code === "EADDRINUSE") {
+        logger.error(
+          `port ${config.port} is already in use — run the backend in one terminal only, then start again`,
+        );
+        process.exit(1);
+      }
+      reject(err);
+    });
+  });
+
   if (process.env.NODE_ENV !== "test") {
     try {
       await connectDB();
@@ -14,11 +36,6 @@ async function main(): Promise<void> {
       logger.error({ err: formatError(err) }, "mongo unavailable at boot — running degraded");
     }
   }
-
-  const app = createApp();
-  const server = app.listen(config.port, () => {
-    logger.info(`careplus-api listening on http://localhost:${config.port}`);
-  });
 
   const shutdown = async (): Promise<void> => {
     logger.info("shutting down...");
