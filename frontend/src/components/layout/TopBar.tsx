@@ -50,6 +50,7 @@ import { useDoctors } from "@/hooks/useDoctors";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useLabReports } from "@/hooks/useLab";
 import { useMedicines } from "@/hooks/usePharmacy";
+import { useStaffPrefs } from "@/hooks/useStaffPrefs";
 import { clearSession } from "@/lib/apiClient";
 
 const ROLES: Array<{ value: RoleType; label: string; icon: typeof Users }> = [
@@ -75,6 +76,7 @@ function useLiveNotifications(): LiveNotification[] {
   const { data: labsData } = useLabReports();
   const { data: medicinesData } = useMedicines();
   const { data: appointmentsData } = useAppointments();
+  const { prefs } = useStaffPrefs();
 
   const notes: LiveNotification[] = [];
 
@@ -135,7 +137,14 @@ function useLiveNotifications(): LiveNotification[] {
     }
   }
 
-  return notes.slice(0, 20);
+  return notes
+    .filter(
+      (n) =>
+        (n.type === "critical" && prefs.showCritical) ||
+        (n.type === "warning" && prefs.showWarning) ||
+        (n.type === "info" && prefs.showInfo),
+    )
+    .slice(0, 20);
 }
 
 function LiveClock() {

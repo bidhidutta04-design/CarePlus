@@ -42,7 +42,9 @@ const NAV_ITEMS: Array<{
   { href: "/staff", label: "Staff", icon: IdCard, badge: null, roles: ["Admin"] },
   { href: "/team", label: "Team Accounts", icon: Users, badge: null, adminOnly: true, roles: ["Admin"] },
   { href: "/reports", label: "Reports", icon: ChartLine, badge: null, roles: ["Admin"] },
-  { href: "/settings", label: "Settings", icon: Settings, badge: null, roles: ["Admin"] },
+  // Visible after login for every role (never public — the sidebar only
+  // renders inside the authenticated dashboard shell).
+  { href: "/settings", label: "Settings", icon: Settings, badge: null, roles: ["Admin", "Doctor", "Nurse", "Pharmacist", "LabTech", "Cashier"] },
 ];
 
 type BadgeType = "appointments" | "lowstock" | "pending" | "live" | null;

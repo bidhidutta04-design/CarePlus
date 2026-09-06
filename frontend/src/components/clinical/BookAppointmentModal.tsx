@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +12,7 @@ import { usePatients } from "@/hooks/usePatients";
 import { useCreateAppointment } from "@/hooks/useAppointments";
 import { useDoctors } from "@/hooks/useDoctors";
 import { buildSlots, useHospitalSettings } from "@/hooks/useHospitalSettings";
+import { useStaffPrefs } from "@/hooks/useStaffPrefs";
 
 const schema = z.object({
   patientId: z.string().min(1, "Select a patient"),
@@ -30,13 +32,23 @@ export function BookAppointmentModal({ open, onClose }: { open: boolean; onClose
   const doctors = doctorsData?.data ?? [];
   const createAppointment = useCreateAppointment();
   const { settings } = useHospitalSettings();
+  const { prefs } = useStaffPrefs();
   const SLOTS = buildSlots(settings.slotMinutes);
   const today = new Date().toISOString().slice(0, 10);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<Form>({
     resolver: zodResolver(schema),
-    defaultValues: { date: today, priority: "Routine", timeSlot: "10:00 AM" },
+    defaultValues: { date: today, priority: prefs.defaultPriority, timeSlot: "10:00 AM" },
   });
+
+  // Fresh booking defaults on every open, honouring this staff member's prefs
+  // (prefs load after first paint, so defaultValues alone would miss them).
+  const slotMinutes = settings.slotMinutes;
+  useEffect(() => {
+    if (open) {
+      reset({ date: today, priority: prefs.defaultPriority, timeSlot: buildSlots(slotMinutes)[0] ?? "10:00 AM" });
+    }
+  }, [open, prefs.defaultPriority, reset, today, slotMinutes]);
 
   const onSubmit = (v: Form): void => {
     const patient = patients.find((p) => p.id === v.patientId);
