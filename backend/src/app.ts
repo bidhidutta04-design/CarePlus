@@ -20,6 +20,8 @@ import inventoryRoutes from "./routes/inventory.js";
 import staffRoutes from "./routes/staff.js";
 import auditRoutes from "./routes/audit.js";
 import dashboardRoutes from "./routes/dashboard.js";
+import usersRoutes from "./routes/users.js";
+import publicRoutes from "./routes/public.js";
 import docsRoutes from "./docs/router.js";
 
 export function createApp(): express.Express {
@@ -65,7 +67,12 @@ export function createApp(): express.Express {
     void import("./docs/openapi.js").then(({ openApiSpec }) => res.json(openApiSpec));
   });
 
-  app.use("/api/v1/auth", authLimiter as unknown as import("express").RequestHandler, authRoutes);
+  // Rate limiting disabled in tests — suites legitimately burst logins/refreshes
+  const limitAuth =
+    process.env.NODE_ENV === "test"
+      ? (_req: unknown, _res: unknown, next: () => void): void => next()
+      : (authLimiter as unknown as import("express").RequestHandler);
+  app.use("/api/v1/auth", limitAuth, authRoutes);
   app.use("/api/v1/patients", patientRoutes);
   app.use("/api/v1/appointments", appointmentRoutes);
   app.use("/api/v1/beds", bedRoutes);
@@ -78,6 +85,8 @@ export function createApp(): express.Express {
   app.use("/api/v1/staff", staffRoutes);
   app.use("/api/v1/audit", auditRoutes);
   app.use("/api/v1/dashboard", dashboardRoutes);
+  app.use("/api/v1/users", usersRoutes);
+  app.use("/api/v1/public", publicRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

@@ -132,6 +132,163 @@
         "security": []
       }
     },
+    "/api/v1/auth/forgot-password": {
+      "post": {
+        "summary": "Get security question (enumeration-safe)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "question"
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/auth/reset-password": {
+      "post": {
+        "summary": "Reset password via security answer",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  },
+                  "answer": {
+                    "type": "string"
+                  },
+                  "newPassword": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "reset"
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/auth/change-password": {
+      "post": {
+        "summary": "Change own password",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "currentPassword": {
+                    "type": "string"
+                  },
+                  "newPassword": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "changed"
+          }
+        }
+      }
+    },
+    "/api/v1/users": {
+      "get": {
+        "summary": "List staff users (Admin)",
+        "responses": {
+          "200": {
+            "description": "list"
+          }
+        }
+      },
+      "post": {
+        "summary": "Provision staff account (Admin)",
+        "responses": {
+          "201": {
+            "description": "created with temp password"
+          }
+        }
+      }
+    },
+    "/api/v1/users/{email}": {
+      "patch": {
+        "summary": "Activate / deactivate staff (Admin)",
+        "responses": {
+          "200": {
+            "description": "updated"
+          }
+        }
+      }
+    },
+    "/api/v1/users/{email}/reset-password": {
+      "post": {
+        "summary": "Admin-issued temp password (Admin)",
+        "responses": {
+          "200": {
+            "description": "temp password"
+          }
+        }
+      }
+    },
+    "/api/v1/public/departments": {
+      "get": {
+        "summary": "Public department listing",
+        "responses": {
+          "200": {
+            "description": "list"
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/public/doctors": {
+      "get": {
+        "summary": "Public doctor listing",
+        "responses": {
+          "200": {
+            "description": "list"
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/public/stats": {
+      "get": {
+        "summary": "Public headline counts",
+        "responses": {
+          "200": {
+            "description": "stats"
+          }
+        },
+        "security": []
+      }
+    },
     "/api/v1/patients": {
       "get": {
         "summary": "List patients",

@@ -47,7 +47,18 @@ beforeAll(async () => {
   await AuditModel.insertMany(db.auditLogs);
 
   const passwordHash = await hashPassword(TEST_PASSWORD);
-  await UserModel.insertMany(TEST_USERS.map((u) => ({ ...u, passwordHash, isActive: true })));
+  // Answers are lowercased before compare (see resetViaSecurityAnswer)
+  const answerHash = await hashPassword(TEST_PASSWORD.toLowerCase());
+  await UserModel.insertMany(
+    TEST_USERS.map((u) => ({
+      ...u,
+      passwordHash,
+      isActive: true,
+      mustChangePassword: false,
+      securityQuestion: "What city were you born in?",
+      securityAnswerHash: answerHash,
+    })),
+  );
 
   await syncCounter(
     ID_SPECS.patient,

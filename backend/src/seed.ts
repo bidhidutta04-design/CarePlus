@@ -92,10 +92,27 @@ async function main(): Promise<void> {
       passwordHash: await hashPassword(adminPassword),
       role: "Admin",
       isActive: true,
+      mustChangePassword: false,
+      securityQuestion: "What is the hospital emergency helpline number?",
+      securityAnswerHash: await hashPassword("9877654320"),
     });
     console.log(`admin user created: ${adminEmail}`);
   } else {
-    console.log(`admin user already present: ${adminEmail}`);
+    // Backfill security Q&A for admins seeded before the recovery feature
+    const legacy = existing as unknown as Record<string, unknown>;
+    if (!legacy["securityQuestion"]) {
+      await UserModel.updateOne(
+        { email: adminEmail },
+        {
+          securityQuestion: "What is the hospital emergency helpline number?",
+          securityAnswerHash: await hashPassword("9877654320"),
+          mustChangePassword: false,
+        },
+      );
+      console.log(`admin user backfilled with recovery question: ${adminEmail}`);
+    } else {
+      console.log(`admin user already present: ${adminEmail}`);
+    }
   }
 
   console.log("seed complete");

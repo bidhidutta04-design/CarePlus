@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { config } from "../config.js";
-import { validate } from "../middleware.js";
+import { requireAuth, validate } from "../middleware.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../errors.js";
 import {
@@ -75,6 +75,17 @@ router.post(
     const user = await findUserByEmail(email);
     if (!user || !user.isActive || !(await verifyPassword(password, user.passwordHash))) {
       next(ApiError.unauthorized("Invalid credentials"));
+      return;
+    }
+    if (user.mustChangePassword) {
+      res.status(403).json({
+        error: {
+          code: "PASSWORD_CHANGE_REQUIRED",
+          message: "You must change your password before continuing.",
+          details: null,
+          requestId: req.requestId,
+        },
+      });
       return;
     }
     const sub = `user-${user.email}`;
@@ -166,5 +177,82 @@ router.post(
 router.get("/roles", (_req, res) => {
   res.json({ data: ROLES });
 });
+
+const forgotSchema = z.object({
+  email: z.string().email().max(120),
+});
+
+const resetSchema = z.object({
+  email: z.string().email().max(120),
+  answer: z.string().min(1).max(200),
+  newPassword: z.string().min(8).max(128),
+});
+
+const changeSchema = z.object({
+  currentPassword: z.string().min(1).max(128),
+  newPassword: z.string().min(8).max(128),
+});
+
+// POST /api/auth/forgot-password — returns the security question.
+// Always 200 (even for unknown emails) so attackers cannot enumerate accounts.
+router.post(
+  "/forgot-password",
+  validate(forgotSchema),
+  asyncHandler(async (req, res) => {
+    const { email } = req.body as { email: string };
+    const user = await findUserByEmail(email);
+    res.json({
+      data: {
+        securityQuestion:
+          user && user.isActive ? user.securityQuestion : "What was the name of your first school?",
+      },
+    });
+  }),
+);
+
+// POST /api/auth/reset-password — verify answer, set new password
+router.post(
+  "/reset-password",
+  validate(resetSchema),
+  asyncHandler(async (req, res, next) => {
+    const { email, answer, newPassword } = req.body as {
+      email: string;
+      answer: string;
+      newPassword: string;
+    };
+    const { resetViaSecurityAnswer } = await import("../repos/userRepo.js");
+    const result = await resetViaSecurityAnswer(email, answer, newPassword);
+    if (result !== "ok") {
+      next(ApiError.unauthorized("Invalid credentials"));
+      return;
+    }
+    res.json({ data: { ok: true } });
+  }),
+);
+
+// POST /api/auth/change-password — authed user changes their own password
+router.post(
+  "/change-password",
+  requireAuth,
+  validate(changeSchema),
+  asyncHandler(async (req, res, next) => {
+    const { currentPassword, newPassword } = req.body as {
+      currentPassword: string;
+      newPassword: string;
+    };
+    const email = (req.user?.sub ?? "").replace(/^user-/, "");
+    const { changeUserPassword } = await import("../repos/userRepo.js");
+    const result = await changeUserPassword(email, currentPassword, newPassword);
+    if (result === "not-found") {
+      next(ApiError.notFound("User"));
+      return;
+    }
+    if (result === "bad-current") {
+      next(ApiError.unauthorized("Current password is incorrect"));
+      return;
+    }
+    res.json({ data: { ok: true } });
+  }),
+);
 
 export default router;

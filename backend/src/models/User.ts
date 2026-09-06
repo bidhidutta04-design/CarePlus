@@ -12,6 +12,9 @@ const userSchema = new Schema(
       index: true,
     },
     isActive: { type: Boolean, default: true, index: true },
+    mustChangePassword: { type: Boolean, default: true, index: true },
+    securityQuestion: { type: String, required: true, maxlength: 200 },
+    securityAnswerHash: { type: String, required: true },
   },
   { timestamps: true },
 );
