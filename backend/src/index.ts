@@ -5,14 +5,14 @@ import { formatError, logger } from "./logger.js";
 
 async function main(): Promise<void> {
   if (process.env.NODE_ENV !== "test") {
-    // Never block listen() on the database — boot fast, report via /ready.
-    // (Previously awaited here: with an unreachable DB the 5s driver timeout
-    // delayed listen and broke health-gated CI steps with curl exit 7.)
-    connectDB().catch(() => {
-      // Logged + retried with backoff inside connectDB; the API serves
-      // requests meanwhile and /ready reports 503 until mongo is back.
-      logger.warn("api accepting requests while mongo reconnects in the background");
-    });
+    try {
+      await connectDB();
+    } catch (err: unknown) {
+      // Boot continues degraded: repos serve the local fallback store,
+      // /ready reports 503, and the driver keeps retrying every operation
+      // until mongo is back — no restart needed.
+      logger.error({ err: formatError(err) }, "mongo unavailable at boot — running degraded");
+    }
   }
 
   const app = createApp();
