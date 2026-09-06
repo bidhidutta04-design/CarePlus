@@ -199,6 +199,7 @@ export const openApiSpec = {
     },
     "/api/v1/doctors": {
       get: { summary: "List doctors", responses: { "200": { description: "list" } } },
+      post: { summary: "Create doctor (Admin)", responses: { "201": { description: "created" } } },
     },
     "/api/v1/departments": {
       get: { summary: "List departments", responses: { "200": { description: "list" } } },

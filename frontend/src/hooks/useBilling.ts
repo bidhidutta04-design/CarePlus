@@ -23,7 +23,15 @@ export interface ApiInvoice {
 
 interface InvoicesResponse {
   data: ApiInvoice[];
-  meta: { total: number; page: number; limit: number; pages: number; billed: number; collected: number };
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+    billed: number;
+    collected: number;
+    pending: number;
+  };
 }
 
 export function useInvoices(filters?: { status?: string; patientId?: string }) {

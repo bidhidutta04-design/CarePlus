@@ -2,6 +2,7 @@ import { MedicineModel } from "../models/Medicine.js";
 import { db } from "../store.js";
 import { ID_SPECS, nextId } from "./counterRepo.js";
 import { paginateArray, sanitizeSort, type Pagination } from "../paginate.js";
+import { safeRegexInput } from "../utils/search.js";
 import { isDbReady } from "../db.js";
 
 export async function listMedicines(
@@ -24,8 +25,8 @@ export async function listMedicines(
     return { data, total: filtered.length };
   }
   const andClauses: Record<string, unknown>[] = [];
-  if (filter.search) {
-    const s = filter.search;
+  const s = safeRegexInput(filter.search);
+  if (s) {
     andClauses.push({
       $or: [
         { brandName: { $regex: s, $options: "i" } },

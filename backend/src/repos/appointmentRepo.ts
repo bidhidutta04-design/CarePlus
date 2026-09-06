@@ -2,6 +2,7 @@ import { AppointmentModel } from "../models/Appointment.js";
 import { db } from "../store.js";
 import { ID_SPECS, nextId, nextSequence } from "./counterRepo.js";
 import { paginateArray, sanitizeSort, type Pagination } from "../paginate.js";
+import { safeRegexInput } from "../utils/search.js";
 import { isDbReady } from "../db.js";
 
 export async function listAppointments(
@@ -33,8 +34,8 @@ export async function listAppointments(
   if (filter.department) query.department = filter.department;
   if (filter.priority) query.priority = filter.priority;
   if (filter.patientId) query.patientId = filter.patientId;
-  if (filter.search) {
-    const s = filter.search;
+  const s = safeRegexInput(filter.search);
+  if (s) {
     query.$or = [
       { id: { $regex: s, $options: "i" } },
       { patientName: { $regex: s, $options: "i" } },

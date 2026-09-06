@@ -2,6 +2,7 @@ import { PatientModel } from "../models/Patient.js";
 import { db } from "../store.js";
 import { ID_SPECS, nextId } from "./counterRepo.js";
 import { paginateArray, sanitizeSort, type Pagination } from "../paginate.js";
+import { safeRegexInput } from "../utils/search.js";
 import { isDbReady } from "../db.js";
 
 export async function listPatients(
@@ -23,8 +24,8 @@ export async function listPatients(
   const query: Record<string, unknown> = {};
   if (filter.status) query.admissionStatus = filter.status;
   if (filter.bloodGroup) query.bloodGroup = filter.bloodGroup;
-  if (filter.search) {
-    const s = filter.search;
+  const s = safeRegexInput(filter.search);
+  if (s) {
     query.$or = [
       { id: { $regex: s, $options: "i" } },
       { fullName: { $regex: s, $options: "i" } },

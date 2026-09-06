@@ -25,9 +25,10 @@ export default function BillingPage() {
   const [print, setPrint] = useState<ApiInvoice | null>(null);
   const [amount, setAmount] = useState(0);
 
-  const billed = invoices.reduce((s, i) => s + i.totalAmount, 0);
-  const collected = invoices.reduce((s, i) => s + i.paidAmount, 0);
-  const pending = invoices.reduce((s, i) => s + i.balanceDue, 0);
+  // Totals come from the server over the FULL ledger — never summed from one page.
+  const billed = data?.meta.billed ?? invoices.reduce((s, i) => s + i.totalAmount, 0);
+  const collected = data?.meta.collected ?? invoices.reduce((s, i) => s + i.paidAmount, 0);
+  const pending = data?.meta.pending ?? invoices.reduce((s, i) => s + i.balanceDue, 0);
   const tpa = invoices.filter((i) => i.paymentMethod === "TPA Insurance" && i.balanceDue > 0).length;
   const list = invoices.filter((i) => filter === "All" || i.status === filter);
 
@@ -39,7 +40,7 @@ export default function BillingPage() {
         actions={<Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="mr-1.5 h-4 w-4" />Create invoice</Button>}
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard icon={Wallet} label="Total billed" value={formatINR(billed)} rawValue={billed} formatValue={(n) => formatINR(Math.round(n))} sub={`${invoices.length} invoices`} tone="blue" />
+        <KpiCard icon={Wallet} label="Total billed" value={formatINR(billed)} rawValue={billed} formatValue={(n) => formatINR(Math.round(n))} sub={`${data?.meta.total ?? invoices.length} invoices`} tone="blue" />
         <KpiCard icon={HandCoins} label="Collected" value={formatINR(collected)} rawValue={collected} formatValue={(n) => formatINR(Math.round(n))} sub="Cash + Card + UPI + TPA" tone="green" />
         <KpiCard icon={Hourglass} label="Pending balances" value={formatINR(pending)} rawValue={pending} formatValue={(n) => formatINR(Math.round(n))} sub="Follow-up queue" tone="amber" />
         <KpiCard icon={ShieldCheck} label="TPA claims in progress" value={String(tpa)} rawValue={tpa} formatValue={(n) => String(Math.round(n))} sub="Star Health, HDFC Ergo" tone="red" />

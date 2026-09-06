@@ -1,12 +1,13 @@
 import { Router } from "express";
 import { z } from "zod";
-import { requireAuth, requireRole, validate } from "../middleware.js";
+import { auditLog, requireAuth, requireRole, validate } from "../middleware.js";
 import { listDoctors, createDoctor } from "../repos/doctorRepo.js";
 import { paginatedMeta, parsePagination } from "../paginate.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = Router();
 router.use(requireAuth);
+router.use(auditLog);
 
 const createDoctorSchema = z.object({
   name: z.string().min(2).max(100),
