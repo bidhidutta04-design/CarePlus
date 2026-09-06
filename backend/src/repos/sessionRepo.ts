@@ -112,6 +112,16 @@ export async function deleteSession(refreshToken: string): Promise<void> {
   await SessionModel.deleteOne({ refreshTokenHash: hash });
 }
 
+// Ends every session of an account — used on deactivate and password change
+// so old tokens cannot outlive the event that should have killed them.
+export async function revokeUserSessions(sub: string): Promise<void> {
+  if (!isDbReady()) {
+    for (const s of memorySessions) if (s.sub === sub) s.isRevoked = true;
+    return;
+  }
+  await SessionModel.updateMany({ sub }, { isRevoked: true });
+}
+
 export async function revokeFamily(familyId: string): Promise<void> {
   if (!isDbReady()) {
     for (const s of memorySessions) if (s.familyId === familyId) s.isRevoked = true;

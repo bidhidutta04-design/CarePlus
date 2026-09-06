@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { UserModel } from "../models/User.js";
 import { isDbReady } from "../db.js";
+import { revokeUserSessions } from "./sessionRepo.js";
 
 const SALT_ROUNDS = 10;
 
@@ -89,7 +90,10 @@ export async function countActiveAdmins(): Promise<number> {
 
 export async function setUserActive(email: string, isActive: boolean): Promise<boolean> {
   const res = await UserModel.updateOne({ email: email.toLowerCase().trim() }, { isActive });
-  return res.matchedCount > 0;
+  if (res.matchedCount === 0) return false;
+  // A deactivated account must stop working everywhere, immediately.
+  if (!isActive) await revokeUserSessions(`user-${email.toLowerCase().trim()}`);
+  return true;
 }
 
 export async function adminResetPassword(email: string): Promise<{ tempPassword: string } | null> {
@@ -99,6 +103,7 @@ export async function adminResetPassword(email: string): Promise<{ tempPassword:
     { passwordHash: await hashPassword(temp), mustChangePassword: true },
   );
   if (res.matchedCount === 0) return null;
+  await revokeUserSessions(`user-${email.toLowerCase().trim()}`);
   return { tempPassword: temp };
 }
 
@@ -114,6 +119,9 @@ export async function changeUserPassword(
     { email: user.email },
     { passwordHash: await hashPassword(newPassword), mustChangePassword: false },
   );
+  // New password = new era: all other sessions (other devices, possible thief)
+  // stop working. The caller re-authenticates with the new password.
+  await revokeUserSessions(`user-${user.email}`);
   return "ok";
 }
 
@@ -130,5 +138,6 @@ export async function resetViaSecurityAnswer(
     { email: user.email },
     { passwordHash: await hashPassword(newPassword), mustChangePassword: false },
   );
+  await revokeUserSessions(`user-${user.email}`);
   return "ok";
 }

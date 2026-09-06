@@ -145,6 +145,14 @@ router.post(
       next(ApiError.unauthorized("Refresh token expired"));
       return;
     }
+    // A deactivated account must not slide its session forward indefinitely.
+    const ownerEmail = session.sub.replace(/^user-/, "");
+    const owner = await findUserByEmail(ownerEmail);
+    if (!owner || !owner.isActive) {
+      await revokeFamily(session.familyId);
+      next(ApiError.unauthorized("Account is deactivated"));
+      return;
+    }
     const newRefreshToken = crypto.randomBytes(48).toString("base64url");
     const newExpiresAt = new Date(Date.now() + config.jwtRefreshExpiresMs);
     const oldHash = hashToken(raw);
