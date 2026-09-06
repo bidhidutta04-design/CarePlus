@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAppDispatch } from "@/store/hooks";
 import { loginSuccess } from "@/store/authSlice";
-import { apiClient } from "@/lib/apiClient";
+import { apiClient, setSession } from "@/lib/apiClient";
 import { HeartPulse } from "lucide-react";
 import type { RoleType } from "@/types/common";
 
@@ -35,9 +35,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const { data } = await apiClient.post<LoginResponse>("/auth/login", { email, password });
-      localStorage.setItem("careplus_token", data.data.token);
-      localStorage.setItem("careplus_refresh_token", data.data.refreshToken);
-      document.cookie = `careplus_token=${data.data.token}; path=/; max-age=900; samesite=strict`;
+      setSession(data.data.token, data.data.refreshToken);
       dispatch(loginSuccess({ role: data.data.role as RoleType, userName: data.data.name }));
       router.push("/");
     } catch (err: unknown) {
@@ -46,14 +44,6 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDemoLogin = (role: RoleType): void => {
-    dispatch(loginSuccess({ role, userName: role }));
-    localStorage.removeItem("careplus_token");
-    localStorage.removeItem("careplus_refresh_token");
-    document.cookie = "careplus_token=demo; path=/; max-age=900; samesite=strict";
-    router.push("/");
   };
 
   return (
@@ -94,27 +84,6 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">or demo mode</span>
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            {(["Admin", "Doctor", "Nurse", "Pharmacist", "LabTech", "Cashier"] as RoleType[]).map((role) => (
-              <Button
-                key={role}
-                variant="outline"
-                size="sm"
-                onClick={() => handleDemoLogin(role)}
-              >
-                Continue as {role}
-              </Button>
-            ))}
-          </div>
         </CardContent>
       </Card>
     </div>
