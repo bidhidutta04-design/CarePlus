@@ -18,31 +18,37 @@ import {
 const DESKS = [
   {
     role: "Doctor / Specialist",
+    slug: "doctor",
     icon: UserRoundCog,
     access: "OPD token queue, patient 360° charts, e-prescriptions, lab lookups.",
   },
   {
     role: "Triage Nurse",
+    slug: "nurse",
     icon: Users,
     access: "Vitals recording, OPD queue management, bed monitoring.",
   },
   {
     role: "Pharmacist",
+    slug: "pharmacist",
     icon: Pill,
     access: "Fulfillment queue, FEFO drug inventory, smart dispenser.",
   },
   {
     role: "Lab Pathologist",
+    slug: "labtech",
     icon: FlaskConical,
     access: "Specimen intake, result entry, report approval and sign-off.",
   },
   {
     role: "Billing Cashier",
+    slug: "cashier",
     icon: FileText,
     access: "Invoice desk, TPA insurance claims, receipts and collections.",
   },
   {
     role: "Hospital Administrator",
+    slug: "admin",
     icon: LayoutDashboard,
     access: "Full system oversight, staff accounts, audit trail, analytics.",
   },
@@ -73,15 +79,22 @@ export default function PortalPage() {
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {DESKS.map((d) => (
-            <Card key={d.role} className="rounded-2xl shadow-card">
-              <CardHeader className="flex flex-row items-center gap-3 pb-2">
-                <span className="rounded-xl bg-clinical/10 p-2 text-clinical">
-                  <d.icon className="h-5 w-5" />
-                </span>
-                <CardTitle className="text-base">{d.role}</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm text-muted-foreground">{d.access}</CardContent>
-            </Card>
+            <Link key={d.role} href={`/login/${d.slug}`} className="block">
+              <Card className="rounded-2xl shadow-card transition hover:-translate-y-0.5 hover:shadow-md">
+                <CardHeader className="flex flex-row items-center gap-3 pb-2">
+                  <span className="rounded-xl bg-clinical/10 p-2 text-clinical">
+                    <d.icon className="h-5 w-5" />
+                  </span>
+                  <CardTitle className="text-base">{d.role}</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground">
+                  {d.access}
+                  <span className="mt-2 flex items-center gap-1 font-medium text-clinical">
+                    Sign in as {d.role.split(" / ")[0].split(" ").pop()} <ArrowRight className="h-3.5 w-3.5" />
+                  </span>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
 

@@ -53,3 +53,23 @@ export function pathAllowed(role: RoleType, pathname: string): boolean {
 export function homeFor(role: RoleType): string {
   return ROLE_HOME[role];
 }
+
+// URL slugs for role-specific login pages (/login/doctor, /login/admin, …)
+export const ROLE_SLUGS: Record<string, RoleType> = {
+  admin: "Admin",
+  doctor: "Doctor",
+  nurse: "Nurse",
+  pharmacist: "Pharmacist",
+  labtech: "LabTech",
+  cashier: "Cashier",
+};
+
+export function roleFromSlug(slug: string | undefined): RoleType | null {
+  if (!slug) return null;
+  return ROLE_SLUGS[slug.toLowerCase()] ?? null;
+}
+
+export function slugFor(role: RoleType): string {
+  const entry = Object.entries(ROLE_SLUGS).find(([, r]) => r === role);
+  return entry ? entry[0] : "admin";
+}

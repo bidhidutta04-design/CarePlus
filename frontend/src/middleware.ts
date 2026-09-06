@@ -16,7 +16,7 @@ export function middleware(request: NextRequest): NextResponse {
     // NOTE: /portal stays viewable for everyone (it is informational) —
     // bouncing logged-in users away from it made the portal "not open".
     const token = request.cookies.get("careplus_token")?.value;
-    if (token && pathname === "/login") {
+    if (token && (pathname === "/login" || pathname.startsWith("/login/"))) {
       const roleCookie = request.cookies.get("careplus_role")?.value;
       const home = isValidRole(roleCookie) ? homeFor(roleCookie) : "/dashboard";
       return NextResponse.redirect(new URL(home, request.url));
