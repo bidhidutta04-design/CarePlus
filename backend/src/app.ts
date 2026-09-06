@@ -28,7 +28,10 @@ export function createApp(): express.Express {
   const app = express();
 
   app.use(helmet());
-  app.use(cors({ origin: config.frontendUrl, credentials: true }));
+  // Local loopback aliases included so the app works whether the browser
+  // uses localhost or 127.0.0.1 (otherwise the browser blocks API calls).
+  const allowedOrigins = [config.frontendUrl, "http://localhost:3000", "http://127.0.0.1:3000"];
+  app.use(cors({ origin: allowedOrigins, credentials: true }));
   app.use(compression() as unknown as import("express").RequestHandler);
   app.use(express.json({ limit: "100kb" }));
   app.use(cookieParser() as unknown as import("express").RequestHandler);
