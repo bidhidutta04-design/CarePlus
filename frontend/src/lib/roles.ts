@@ -23,14 +23,16 @@ export const ROLE_LABEL: Record<RoleType, string> = {
 };
 
 // Path prefixes each role may visit. Admin ("*") may visit everything.
+// /settings opens for every role — the page itself decides what each role
+// may change (hospital profile is admin-only, theme is personal).
 // Keep in sync with backend RBAC — backend is the enforcing layer.
 export const ROLE_PATHS: Record<RoleType, string[]> = {
   Admin: ["*"],
-  Doctor: ["/desk/doctor", "/appointments", "/patients", "/doctors", "/lab-reports", "/departments"],
-  Nurse: ["/desk/nurse", "/appointments", "/patients", "/departments/beds", "/departments"],
-  Pharmacist: ["/desk/pharmacy", "/pharmacy", "/inventory"],
-  LabTech: ["/desk/lab", "/lab-reports", "/patients"],
-  Cashier: ["/desk/billing", "/billing", "/patients"],
+  Doctor: ["/desk/doctor", "/appointments", "/patients", "/doctors", "/lab-reports", "/departments", "/settings"],
+  Nurse: ["/desk/nurse", "/appointments", "/patients", "/departments/beds", "/departments", "/settings"],
+  Pharmacist: ["/desk/pharmacy", "/pharmacy", "/inventory", "/settings"],
+  LabTech: ["/desk/lab", "/lab-reports", "/patients", "/settings"],
+  Cashier: ["/desk/billing", "/billing", "/patients", "/settings"],
 };
 
 export function isValidRole(value: string | undefined): value is RoleType {

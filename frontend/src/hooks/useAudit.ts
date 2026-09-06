@@ -18,10 +18,11 @@ interface AuditResponse {
   meta: { total: number; page: number; limit: number; pages: number };
 }
 
-export function useAuditLogs() {
+export function useAuditLogs(enabled = true) {
   const router = useRouter();
   return useQuery({
     queryKey: ["audit"],
+    enabled,
     queryFn: async () => {
       const { data } = await apiClient.get<AuditResponse>("/audit");
       return data;

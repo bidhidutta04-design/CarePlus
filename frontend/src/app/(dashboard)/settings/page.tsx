@@ -16,7 +16,10 @@ import { Lock } from "lucide-react";
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const role = useAppSelector((s) => s.auth.role);
-  const { data: auditData, isLoading: auditLoading } = useAuditLogs();
+  const isAdmin = role === "Admin";
+  // Non-admin staff may open this page (theme + view-only info) but only an
+  // administrator can change hospital details or view the audit trail.
+  const { data: auditData, isLoading: auditLoading } = useAuditLogs(isAdmin);
   const auditLogs = auditData?.data ?? [];
   const { settings, saveSettings } = useHospitalSettings();
   const [name, setName] = useState(settings.hospitalName);
@@ -62,26 +65,31 @@ export default function SettingsPage() {
         <Card className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
           <CardHeader><CardTitle>Hospital profile</CardTitle></CardHeader>
           <CardContent className="grid gap-3">
+            {!isAdmin && (
+              <p className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
+                <Lock className="h-3.5 w-3.5" /> Hospital details can only be changed by an administrator. Your theme choice below still works.
+              </p>
+            )}
             <label className="grid gap-1 text-sm">Hospital name
-              <Input value={name} onChange={(e) => { setName(e.target.value); markDirty(); }} />
+              <Input value={name} disabled={!isAdmin} onChange={(e) => { setName(e.target.value); markDirty(); }} />
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="grid gap-1 text-sm">Public contact number
-                <Input value={phone} placeholder="e.g. +1 (987) 765 4320" onChange={(e) => { setPhone(e.target.value); markDirty(); }} />
+                <Input value={phone} disabled={!isAdmin} placeholder="e.g. +1 (987) 765 4320" onChange={(e) => { setPhone(e.target.value); markDirty(); }} />
               </label>
               <label className="grid gap-1 text-sm">Dial code (digits)
-                <Input value={phoneHref} placeholder="e.g. 19877654320" onChange={(e) => { setPhoneHref(e.target.value.replace(/[^\d+]/g, "")); markDirty(); }} />
+                <Input value={phoneHref} disabled={!isAdmin} placeholder="e.g. 19877654320" onChange={(e) => { setPhoneHref(e.target.value.replace(/[^\d+]/g, "")); markDirty(); }} />
               </label>
             </div>
             <label className="grid gap-1 text-sm">Public address
-              <Input value={address} placeholder="Shown in the landing footer when set" onChange={(e) => { setAddress(e.target.value); markDirty(); }} />
+              <Input value={address} disabled={!isAdmin} placeholder="Shown in the landing footer when set" onChange={(e) => { setAddress(e.target.value); markDirty(); }} />
             </label>
             <label className="grid gap-1 text-sm">OPD hours note
-              <Input value={opdNote} onChange={(e) => { setOpdNote(e.target.value); markDirty(); }} />
+              <Input value={opdNote} disabled={!isAdmin} onChange={(e) => { setOpdNote(e.target.value); markDirty(); }} />
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="grid gap-1 text-sm">OPD slot interval (min)
-                <Input type="number" min={10} max={60} step={5} value={slot} onChange={(e) => { setSlot(Number(e.target.value)); setDirty(true); }} />
+                <Input type="number" min={10} max={60} step={5} value={slot} disabled={!isAdmin} onChange={(e) => { setSlot(Number(e.target.value)); setDirty(true); }} />
               </label>
               <div className="grid gap-1 text-sm">Theme
                 <div className="flex items-center gap-2 rounded-lg border px-3 py-2">
@@ -91,10 +99,12 @@ export default function SettingsPage() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground">Signed in as {role}. Saved on this device; the slot interval drives the booking slot picker.</p>
-            <div>
-              <Button size="sm" onClick={onSave} disabled={!dirty}>Save profile</Button>
-              {saved && <span className="ml-2 text-sm text-green-700">Saved.</span>}
-            </div>
+            {isAdmin && (
+              <div>
+                <Button size="sm" onClick={onSave} disabled={!dirty}>Save profile</Button>
+                {saved && <span className="ml-2 text-sm text-green-700">Saved.</span>}
+              </div>
+            )}
           </CardContent>
         </Card>
         <Card className="rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
@@ -118,6 +128,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+      {isAdmin && (
       <Card className="mt-4 rounded-2xl shadow-card transition-all duration-200 hover:shadow-md hover:-translate-y-px">
         <CardHeader className="flex flex-row items-center gap-2">
           <Lock className="h-4 w-4 text-muted-foreground" />
@@ -148,6 +159,7 @@ export default function SettingsPage() {
           <p className="mt-2 text-xs text-muted-foreground">Append-only trail — entries cannot be edited or deleted from this console.</p>
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }
