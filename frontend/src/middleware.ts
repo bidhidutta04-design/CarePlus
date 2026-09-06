@@ -12,9 +12,11 @@ export function middleware(request: NextRequest): NextResponse {
 
   // Public marketing site + auth flows
   if (pathname === "/" || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) {
-    // Already logged in? Skip auth pages straight to the role home
+    // Already logged in? Skip the login form straight to the role home.
+    // NOTE: /portal stays viewable for everyone (it is informational) —
+    // bouncing logged-in users away from it made the portal "not open".
     const token = request.cookies.get("careplus_token")?.value;
-    if (token && (pathname === "/login" || pathname === "/portal")) {
+    if (token && pathname === "/login") {
       const roleCookie = request.cookies.get("careplus_role")?.value;
       const home = isValidRole(roleCookie) ? homeFor(roleCookie) : "/dashboard";
       return NextResponse.redirect(new URL(home, request.url));
