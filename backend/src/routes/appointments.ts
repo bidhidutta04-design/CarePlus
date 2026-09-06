@@ -99,7 +99,9 @@ router.patch(
     }
     const { status, vitals } = req.body as z.infer<typeof statusSchema>;
     const allowed = TRANSITIONS[appt.status] ?? [];
-    if (!allowed.includes(status)) {
+    // Same-status updates are idempotent (e.g. attaching vitals to a patient
+    // already in triage) — only genuine jumps are rejected.
+    if (status !== appt.status && !allowed.includes(status)) {
       next(ApiError.conflict(`Cannot move ${appt.status} → ${status}`));
       return;
     }

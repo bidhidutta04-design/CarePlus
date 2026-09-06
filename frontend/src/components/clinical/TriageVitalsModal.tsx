@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useUpdateAppointmentStatus } from "@/hooks/useAppointments";
+import { getApiErrorMessage } from "@/lib/apiClient";
 
 const schema = z.object({
   appointmentId: z.string().min(1, "Enter appointment ID"),
@@ -20,15 +22,20 @@ type Form = z.infer<typeof schema>;
 
 export function TriageVitalsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const updateStatus = useUpdateAppointmentStatus();
+  const [error, setError] = useState("");
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<Form>({
     resolver: zodResolver(schema),
     defaultValues: { bp: "120/80", pulse: 80, spo2: 98, temp: 98.6 },
   });
 
   const onSubmit = (v: Form): void => {
+    setError("");
     updateStatus.mutate(
       { id: v.appointmentId, status: "In Triage", vitals: { bp: v.bp, pulse: v.pulse, spo2: v.spo2, temp: v.temp } },
-      { onSuccess: () => { reset(); onClose(); } }
+      {
+        onSuccess: () => { reset(); setError(""); onClose(); },
+        onError: (e) => setError(getApiErrorMessage(e)),
+      }
     );
   };
 
@@ -44,6 +51,7 @@ export function TriageVitalsModal({ open, onClose }: { open: boolean; onClose: (
           <label className={field}>Pulse<Input type="number" {...register("pulse")} /></label>
           <label className={field}>SpO2 %<Input type="number" {...register("spo2")} /></label>
           <label className={field}>Temp °F<Input type="number" step="0.1" {...register("temp")} /></label>
+          {error && <p role="alert" className="col-span-2 text-sm text-red-600">{error}</p>}
           <DialogFooter className="col-span-2">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
             <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Saving…" : "Save & move to triage"}</Button>
