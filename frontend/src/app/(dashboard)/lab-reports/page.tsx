@@ -13,6 +13,7 @@ import { useLabReports, useUpdateLabStatus } from "@/hooks/useLab";
 import type { ApiLabReport } from "@/hooks/useLab";
 import { FlaskConical, Clock, CheckCircle2, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getApiErrorMessage } from "@/lib/apiClient";
 
 const STAGES: ApiLabReport["status"][] = ["Ordered", "Sample Collected", "Under Analysis", "Report Approved"];
 
@@ -23,6 +24,7 @@ export default function LabPage() {
   const [orderOpen, setOrderOpen] = useState(false);
   const [entry, setEntry] = useState<ApiLabReport | null>(null);
   const [print, setPrint] = useState<ApiLabReport | null>(null);
+  const [advanceError, setAdvanceError] = useState("");
   const [draft, setDraft] = useState<Array<{ parameter: string; value: string; unit: string; normalRange: string }>>([]);
 
   const openEntry = (lab: ApiLabReport): void => {
@@ -46,7 +48,18 @@ export default function LabPage() {
 
   const advance = (lab: ApiLabReport): void => {
     const i = STAGES.indexOf(lab.status);
-    if (i < STAGES.length - 1) updateLabStatus.mutate({ id: lab.id, status: STAGES[i + 1] });
+    if (i >= STAGES.length - 1) return;
+    const next = STAGES[i + 1];
+    // Approval requires result values — route through the entry dialog instead
+    // of a blind status jump the API must reject.
+    if (next === "Report Approved") {
+      openEntry(lab);
+      return;
+    }
+    updateLabStatus.mutate(
+      { id: lab.id, status: next },
+      { onError: (e) => setAdvanceError(getApiErrorMessage(e)) },
+    );
   };
 
   return (
@@ -56,6 +69,9 @@ export default function LabPage() {
         subtitle={isLoading ? "Loading lab reports…" : "Ordered → Sample Collected → Under Analysis → Report Approved"}
         actions={<Button size="sm" onClick={() => setOrderOpen(true)}>Order test</Button>}
       />
+      {advanceError && (
+        <p role="alert" className="mb-3 text-sm text-red-600">{advanceError}</p>
+      )}
       <div className="grid gap-4 sm:grid-cols-3">
         <KpiCard icon={FlaskConical} label="Total orders" value={String(labs.length)} rawValue={labs.length} formatValue={(n) => String(Math.round(n))} sub="All pipelines" tone="blue" />
         <KpiCard icon={Clock} label="Pending" value={String(labs.filter((l) => l.status !== "Report Approved").length)} rawValue={labs.filter((l) => l.status !== "Report Approved").length} formatValue={(n) => String(Math.round(n))} sub="Needs action" tone="amber" />

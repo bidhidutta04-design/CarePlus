@@ -51,6 +51,19 @@ export async function getPatientById(id: string): Promise<(typeof db.patients)[n
   return (doc as unknown as (typeof db.patients)[number]) ?? null;
 }
 
+// Keeps the patient directory in sync with bed movements (admit/discharge).
+export async function setAdmissionStatus(
+  id: string,
+  status: "OPD" | "Admitted" | "Discharged",
+): Promise<void> {
+  if (!isDbReady()) {
+    const patient = db.patients.find((p) => p.id === id);
+    if (patient) patient.admissionStatus = status;
+    return;
+  }
+  await PatientModel.updateOne({ id }, { $set: { admissionStatus: status } });
+}
+
 export async function createPatient(
   data: Omit<(typeof db.patients)[number], "id" | "registeredDate"> & {
     id?: string;

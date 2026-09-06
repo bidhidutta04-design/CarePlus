@@ -3,6 +3,7 @@ import { z } from "zod";
 import { ApiError } from "../errors.js";
 import { auditLog, requireAuth, requireRole, validate } from "../middleware.js";
 import { getBedById, listBeds, updateBed } from "../repos/bedRepo.js";
+import { setAdmissionStatus } from "../repos/patientRepo.js";
 import { paginatedMeta, parsePagination } from "../paginate.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
@@ -50,12 +51,29 @@ router.patch(
       next(ApiError.badRequest("patientId required to occupy a bed"));
       return;
     }
-    const updated = await updateBed(req.params.id, {
-      status,
-      patientId: patientId ?? bed.patientId,
-      patientName: patientName ?? bed.patientName,
-      admittedDate: new Date().toISOString().slice(0, 10),
-    });
+    // Pass through only what the caller sent — the repo clears patient fields
+    // itself on release, so stale values must never be re-merged here.
+    const updated = await updateBed(
+      req.params.id,
+      status === "Occupied"
+        ? {
+            status,
+            patientId,
+            patientName,
+            admittedDate: new Date().toISOString().slice(0, 10),
+          }
+        : { status },
+    );
+    // Keep the patient directory consistent with the bed board.
+    const previousId = bed.patientId;
+    if (status === "Occupied" && patientId) {
+      if (previousId && previousId !== patientId) {
+        await setAdmissionStatus(previousId, "Discharged");
+      }
+      await setAdmissionStatus(patientId, "Admitted");
+    } else if (status === "Vacant" && previousId) {
+      await setAdmissionStatus(previousId, "Discharged");
+    }
     res.json({ data: updated });
   }),
 );

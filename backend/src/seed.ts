@@ -81,6 +81,48 @@ async function main(): Promise<void> {
   );
   console.log("counters synced");
 
+  // Demo staff logins (dev only) — created once, skipped when present so real
+  // passwords are never overwritten. mustChangePassword forces replacement at
+  // first sign-in, which now works via the public /change-password page.
+  const demoStaff = [
+    {
+      email: "doctor@careplus.local",
+      name: "Dr. Amit Verma",
+      role: "Doctor",
+      password: "Doctor@123",
+    },
+    { email: "nurse@careplus.local", name: "Nurse Asha", role: "Nurse", password: "Nurse@123" },
+    {
+      email: "pharma@careplus.local",
+      name: "Ravi Kumar",
+      role: "Pharmacist",
+      password: "Pharma@123",
+    },
+    { email: "lab@careplus.local", name: "Anjali Rao", role: "LabTech", password: "Lab@1234" },
+    {
+      email: "cashier@careplus.local",
+      name: "Meena Iyer",
+      role: "Cashier",
+      password: "Cashier@123",
+    },
+  ] as const;
+  for (const s of demoStaff) {
+    const present = await UserModel.findOne({ email: s.email }).lean();
+    if (!present) {
+      await UserModel.create({
+        email: s.email,
+        name: s.name,
+        passwordHash: await hashPassword(s.password),
+        role: s.role,
+        isActive: true,
+        mustChangePassword: true,
+        securityQuestion: "What city were you born in?",
+        securityAnswerHash: await hashPassword(`careplus-${s.role.toLowerCase()}`),
+      });
+      console.log(`demo staff created: ${s.email} (temporary password, change at first sign-in)`);
+    }
+  }
+
   // Default admin (dev only) — change password immediately in real deployments
   const adminEmail = process.env.SEED_ADMIN_EMAIL ?? "admin@careplus.local";
   const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? "Admin@123";

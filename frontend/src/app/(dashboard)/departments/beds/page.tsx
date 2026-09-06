@@ -4,11 +4,12 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { useAppSelector } from "@/store/hooks";
 import { useBeds, useUpdateBed } from "@/hooks/useBeds";
 import type { ApiBed } from "@/hooks/useBeds";
+import { usePatients } from "@/hooks/usePatients";
+import { getApiErrorMessage } from "@/lib/apiClient";
 import { announcePresence, mockRoom } from "@/lib/liveblocksMock";
 import { cn } from "@/lib/utils";
 
@@ -28,8 +29,11 @@ export default function BedBoardPage() {
   const beds = data?.data ?? [];
   const [, setTick] = useState(0);
   const [selected, setSelected] = useState<ApiBed | null>(null);
-  const [patientName, setPatientName] = useState("");
+  const [admitPatientId, setAdmitPatientId] = useState("");
+  const [saveError, setSaveError] = useState("");
   const [nextStatus, setNextStatus] = useState<string>("Occupied");
+  const { data: patientsData } = usePatients();
+  const patients = patientsData?.data ?? [];
 
   useEffect(() => {
     announcePresence(userName, "Bed Board");
@@ -41,20 +45,34 @@ export default function BedBoardPage() {
 
   const openBed = (b: ApiBed): void => {
     setSelected(b);
-    setPatientName(b.patientName ?? "");
+    setAdmitPatientId(b.patientId ?? "");
+    setSaveError("");
     setNextStatus(b.status === "Vacant" ? "Occupied" : "Vacant");
   };
 
   const save = (): void => {
     if (!selected) return;
-    updateBed.mutate({
-      id: selected.id,
-      status: nextStatus,
-      patientName: nextStatus === "Occupied" ? patientName || "New Admission" : undefined,
-      patientId: nextStatus === "Occupied" ? selected.patientId ?? "CP-1001" : undefined,
-    });
-    mockRoom.broadcast();
-    setSelected(null);
+    if (nextStatus === "Occupied" && !admitPatientId) {
+      setSaveError("Select the patient being admitted — admissions are always linked to a real chart.");
+      return;
+    }
+    const patient = patients.find((p) => p.id === admitPatientId);
+    setSaveError("");
+    updateBed.mutate(
+      {
+        id: selected.id,
+        status: nextStatus,
+        patientName: nextStatus === "Occupied" ? (patient?.fullName ?? "") : undefined,
+        patientId: nextStatus === "Occupied" ? admitPatientId : undefined,
+      },
+      {
+        onSuccess: () => {
+          mockRoom.broadcast();
+          setSelected(null);
+        },
+        onError: (e) => setSaveError(getApiErrorMessage(e)),
+      },
+    );
   };
 
   return (
@@ -115,10 +133,20 @@ export default function BedBoardPage() {
               </select>
             </label>
             {nextStatus === "Occupied" && (
-              <label className="grid gap-1 text-sm">Patient name
-                <Input value={patientName} onChange={(e) => setPatientName(e.target.value)} placeholder="Full name" />
+              <label className="grid gap-1 text-sm">Admit patient
+                <select
+                  value={admitPatientId}
+                  onChange={(e) => setAdmitPatientId(e.target.value)}
+                  className="rounded-lg border border-input bg-background px-3 py-2"
+                >
+                  <option value="">Select patient…</option>
+                  {patients.map((p) => (
+                    <option key={p.id} value={p.id}>{p.fullName} ({p.id})</option>
+                  ))}
+                </select>
               </label>
             )}
+            {saveError && <p role="alert" className="text-sm text-red-600">{saveError}</p>}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSelected(null)}>Cancel</Button>
